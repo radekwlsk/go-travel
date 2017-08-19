@@ -6,7 +6,7 @@ Requests can be made in four modes:
 3. **Name**, where places are searched on Google Maps by provided name and 1st result is selected.
 4. **PlaceID**, where places are identified by their Google Maps API PlaceID
 
-```json
+```
 {
   "APIKey" : string,
   "Mode": ["address"|"geo"|"name"|"id"],
@@ -35,7 +35,7 @@ Requests can be made in four modes:
 > `Description` mode specific place description used to identify specific location:
 > - in **Address** mode:
 >   ```json
->   "Description": {
+>   {
 >     "Name": "Bar Placuszek",
 >     "Street": "Jedności Narodowej",
 >     "Number": 12,
@@ -46,7 +46,7 @@ Requests can be made in four modes:
 >
 > - in **Geo-coordinates** mode:
 >   ```json
->   "Description": {
+>   {
 >     "Lat": 12.21341,
 >     "Lng": -43.21342
 >   }
@@ -54,14 +54,14 @@ Requests can be made in four modes:
 >
 > - in **Name** mode:
 >   ```json
->   "Description": {
+>   {
 >     "Name": "Bar Placuszek"
 >   }
 >   ```
 >
 > - in **PlaceID** mode:
 >   ```json
->   "Description": {
+>   {
 >     "PlaceID": "AF346Q#ABTG&EASF1!@"
 >   }
 >   ```
