@@ -1,12 +1,14 @@
-package gotravel
+package main
 
 import (
 	"log"
 
-	//"github.com/kr/pretty"
 	"github.com/kr/pretty"
-	"golang.org/x/net/context"
+	//"golang.org/x/net/context"
 	"googlemaps.github.io/maps"
+	"github.com/mitchellh/mapstructure"
+	gts "./gotravelsvc"
+	"encoding/json"
 )
 
 const (
@@ -14,7 +16,7 @@ const (
 )
 
 func main() {
-	c, err := maps.NewClient(maps.WithAPIKey(API_KEY))
+	_, err := maps.NewClient(maps.WithAPIKey(API_KEY))
 	if err != nil {
 		log.Fatalf("fatal error: %s", err)
 	}
@@ -64,33 +66,82 @@ func main() {
 	//	}
 	//}
 
-	var place_id string
-	
-	{
-		r := &maps.GeocodingRequest{
-			Address: "Bema Cafe, Wrocław",
-		}
-		var resp []maps.GeocodingResult
-		resp, err = c.Geocode(context.Background(), r)
-		if err != nil {
-			log.Fatalf("fatal error: %s", err)
-		}
+	//var place_id string
 
-		//pretty.Println(resp)
-		place_id = resp[0].PlaceID
-	}
+	//{
+	//	r := &maps.GeocodingRequest{
+	//		Address: "Bema Cafe, Wrocław",
+	//	}
+	//	var resp []maps.GeocodingResult
+	//	resp, err = c.Geocode(context.Background(), r)
+	//	if err != nil {
+	//		log.Fatalf("fatal error: %s", err)
+	//	}
+	//
+	//	pretty.Println(resp)
+	//
+	//	place_id = resp[0].PlaceID
+	//}
+	//
+	//{
+	//	r := &maps.PlaceDetailsRequest{
+	//		PlaceID: place_id,
+	//	}
+	//	var resp maps.PlaceDetailsResult
+	//	resp, err = c.PlaceDetails(context.Background(), r)
+	//	if err != nil {
+	//		log.Fatalf("fatal error: %s", err)
+	//	}
+	//
+	//	pretty.Println(resp)
+	//
+	//}
 	
-	{
-		r := &maps.PlaceDetailsRequest{
-			PlaceID: place_id,
+	jsonRequest := []byte(`{
+	"Mode": "address",
+	"TripStart": [12, 0],
+	"TripEnd": [20, 30],
+	"TripDate": {
+		"Day": 12,
+		"Month": 6,
+		"Year": 2017
+	},
+	"TravelModes": {
+		"Driving": false,
+		"Walking": true,
+		"Transit": false,
+		"Cycling": true
+	},
+	"Places": [
+		{
+			"Description": {
+				"Name": "Bar Placuszek",
+				"Street": "Jedności Narodowej",
+				"Number": 12,
+				"City": "Wrocław",
+				"Country": "Poland"
+			},
+			"Priority": 5,
+			"StayDuration": 45
 		}
-		var resp maps.PlaceDetailsResult
-		resp, err = c.PlaceDetails(context.Background(), r)
-		if err != nil {
-			log.Fatalf("fatal error: %s", err)
+	]
+}`)
+	var tc gts.TripConfiguration
+	
+	err = json.Unmarshal(jsonRequest, &tc)
+	
+	if err != nil {
+		println("error occurred", err.Error())
+	} else {
+		for _, place := range tc.Places {
+			var ad gts.AddressDescription
+			err = mapstructure.Decode(place.Description, &ad)
+			if err != nil {
+				println(err.Error())
+			} else {
+				place.Description = ad
+			}
 		}
-		
-		pretty.Println(resp)
-		
+		pretty.Println(tc)
 	}
 }
