@@ -1,11 +1,9 @@
-package str
+package main
 
 import "strings"
 
-type String = string
-
-func (s String) EmptyDefault(d string) string {
-	if len(strings.TrimSpace(s)) == 0 {
+func EmptyDefault(s string, d string) string {
+	if len(strings.TrimSpace(string(s))) == 0 {
 		return d
 	} else {
 		return s
