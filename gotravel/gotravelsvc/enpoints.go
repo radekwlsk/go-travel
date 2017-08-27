@@ -1,15 +1,16 @@
 package gotravelsvc
 
 import (
-	"github.com/go-kit/kit/endpoint"
-	httptransport "github.com/go-kit/kit/transport/http"
+	"context"
 	"net/url"
 	"strings"
-	"context"
+
+	"github.com/go-kit/kit/endpoint"
+	httptransport "github.com/go-kit/kit/transport/http"
 )
 
 type Endpoints struct {
-	TripPlanEndpoint   endpoint.Endpoint
+	TripPlanEndpoint endpoint.Endpoint
 }
 
 func MakeServerEndpoints(s Service) Endpoints {
@@ -35,26 +36,26 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 	// encoders for each endpoint.
 
 	return Endpoints{
-		TripPlanEndpoint:   httptransport.NewClient("POST", tgt, EncodeTripPlanRequest, DecodeTripPlanResponse,
+		TripPlanEndpoint: httptransport.NewClient("POST", tgt, EncodeTripPlanRequest, DecodeTripPlanResponse,
 			options...).Endpoint(),
 	}, nil
 }
 
-func (e Endpoints) TripPlan(ctx context.Context, tc TripConfiguration) (string, error) {
+func (e Endpoints) TripPlan(ctx context.Context, tc TripConfiguration) (Trip, error) {
 	request := tripPlanRequest{TripConfiguration: tc}
 	response, err := e.TripPlanEndpoint(ctx, request)
 	if err != nil {
-		return "", err
+		return Trip{}, err
 	}
 	resp := response.(tripPlanResponse)
-	return resp.DecodedString, resp.Err
+	return resp.Response, resp.Err
 }
 
 func MakeTripPlanEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(tripPlanRequest)
-		str, e := s.TripPlan(ctx, req.TripConfiguration)
-		return tripPlanResponse{DecodedString: str, Err: e}, nil
+		resp, e := s.TripPlan(ctx, req.TripConfiguration)
+		return tripPlanResponse{Response: resp, Err: e}, nil
 	}
 }
 
@@ -63,8 +64,8 @@ type tripPlanRequest struct {
 }
 
 type tripPlanResponse struct {
-	DecodedString string `json:"str,omitempty"`
-	Err           error  `json:"err,omitempty"`
+	Response Trip  `json:"resp,omitempty"`
+	Err      error `json:"err,omitempty"`
 }
 
 func (r tripPlanResponse) error() error { return r.Err }
