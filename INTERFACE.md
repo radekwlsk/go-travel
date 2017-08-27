@@ -1,4 +1,6 @@
-# REQUEST
+# REQUESTS
+
+## Format
 
 Requests can be made in four modes:
 1. **Address**, where places are identified by their address match on Google Maps.
@@ -8,26 +10,26 @@ Requests can be made in four modes:
 
 ```
 {
-  "APIKey" : string,
-  "Mode": ["address"|"geo"|"name"|"id"],
-  "TripStart": [int 0-23, int 0-59],
-  "TripEnd": [int 0-23, int 0-59],
-  "TripDate": {
-    "Day": int 1-31,
-    "Month": int 1-12,
-    "Year": int year
+  "api_key" : string,
+  "mode": ["address"|"geo"|"name"|"id"],
+  "trip_start": [int 0-23, int 0-59],
+  "trip_end": [int 0-23, int 0-59],
+  "trip_date": {
+    "d": int 1-31,
+    "m": int 1-12,
+    "y": int year
   },
-  "TravelModes": {
-    "Driving": [true|false],
-    "Walking": [true|false],
-    "Transit": [true|false],
-    "Cycling": [true|false]
+  "travel_modes": {
+    "driving": [true|false],
+    "walking": [true|false],
+    "transit": [true|false],
+    "bicycling": [true|false]
   },
-  "Places": [
+  "places": [
     {
-      "Description": {},
-      "Priority": int 1-10,
-      "StayDuration": int minutes
+      "description": {},
+      "priority": int 1-10,
+      "stay_duration": int minutes
     }
   ]
 }
@@ -36,38 +38,53 @@ Requests can be made in four modes:
 > - in **Address** mode:
 >   ```json
 >   {
->     "Name": "Bar Placuszek",
->     "Street": "Jedności Narodowej",
->     "Number": 12,
->     "City": "Wrocław", 
->     "Country": "Poland"
+>     "name": "Bar Placuszek",
+>     "street": "Jedności Narodowej",
+>     "number": "12",
+>     "city": "Wrocław",
+>     "postal_code": "50-309",
+>     "country": "Poland"
 >   }
 >   ```
 >
 > - in **Geo-coordinates** mode:
 >   ```json
 >   {
->     "Lat": 12.21341,
->     "Lng": -43.21342
+>     "lat": 12.21341,
+>     "lng": -43.21342
 >   }
 >   ```
 >
 > - in **Name** mode:
 >   ```json
 >   {
->     "Name": "Bar Placuszek"
+>     "name": "Bar Placuszek"
 >   }
 >   ```
 >
 > - in **PlaceID** mode:
 >   ```json
 >   {
->     "PlaceID": "AF346Q#ABTG&EASF1!@"
+>     "place_id": "AF346Q#ABTG&EASF1!@"
 >   }
 >   ```
 >
 > `Priority` can be integer value in range 0-10, places with lower priority can be omitted to allow visiting more high-priority places.
 >
 > `StayDuration` is time that tourist plans to spend in place, will be used to calculate route optimizing for trip time and priorities. 
+
+## Making requests
+
+To make request and get complete response with headers one can use:
+
+```bash
+curl -v -H "Content-Type: application/json" -d @request.json http://localhost:8080/api/trip/
+```
+
+And for just pretty printed JSON:
+
+```bash
+curl -s -H "Content-Type: application/json" -d @request.json http://localhost:8080/api/trip/ | json_pp
+```
 
 # RESPONSE
