@@ -26,7 +26,7 @@ func New(instance string) gotravelsvc.Service {
 		gotravelsvc.EncodeRequest,
 		gotravelsvc.DecodeTripPlanResponse,
 	).Endpoint()
-
+	
 	return gotravelsvc.Endpoints{
 		TripPlanEndpoint: tripPlanEndpoint,
 	}

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 	"sync"
-
+	
 	"errors"
+	
 	"github.com/AfroMetal/go-travel/utils"
 	"github.com/google/uuid"
 	"github.com/kr/pretty"
@@ -66,9 +67,9 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (
 	if err != nil {
 		return "", err
 	}
-
+	
 	var place_id string
-
+	
 	{
 		r := &maps.GeocodingRequest{
 			Address: ad.toAddressString(),
@@ -80,7 +81,7 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (
 		}
 		place_id = resp[0].PlaceID
 	}
-
+	
 	return place_id, nil
 }
 
@@ -187,16 +188,16 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		}
 		trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
 	}
-
+	
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
-
+	
 	err = trip.Evaluate()
 	if err != nil {
 		return Trip{}, err
 	}
-
+	
 	decoded := pretty.Sprint(tc)
 	log.Printf("Decoded request to:\n%s", decoded)
-
+	
 	return
 }

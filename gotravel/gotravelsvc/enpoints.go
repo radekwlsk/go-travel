@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/url"
 	"strings"
-
+	
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -28,13 +28,13 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 		return Endpoints{}, err
 	}
 	tgt.Path = ""
-
+	
 	options := []httptransport.ClientOption{}
-
+	
 	// Note that the request encoders need to modify the request URL, changing
 	// the path and method. That's fine: we simply need to provide specific
 	// encoders for each endpoint.
-
+	
 	return Endpoints{
 		TripPlanEndpoint: httptransport.NewClient("POST", tgt, EncodeTripPlanRequest, DecodeTripPlanResponse,
 			options...).Endpoint(),

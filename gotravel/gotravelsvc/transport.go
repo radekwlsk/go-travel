@@ -2,16 +2,17 @@ package gotravelsvc
 
 import (
 	"context"
-	"net/http"
 	"encoding/json"
+	"net/http"
 	
 	"github.com/gorilla/mux"
 	
+	"bytes"
+	"errors"
+	"io/ioutil"
+	
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
-	"bytes"
-	"io/ioutil"
-	"errors"
 )
 
 func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
@@ -22,7 +23,7 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		httptransport.ServerErrorEncoder(errorEncoder),
 	}
 	
-	r.Methods("POST").Path("/trip/").Handler(httptransport.NewServer(
+	r.Methods("POST").Path("/api/trip/").Handler(httptransport.NewServer(
 		e.TripPlanEndpoint,
 		DecodeTripPlanRequest,
 		EncodeResponse,
@@ -42,7 +43,7 @@ func DecodeTripPlanRequest(_ context.Context, r *http.Request) (interface{}, err
 
 func EncodeTripPlanRequest(ctx context.Context, req *http.Request, request interface{}) error {
 	// r.Methods("POST").Path("/trip/")
-	req.Method, req.URL.Path = "POST", "/trip/"
+	req.Method, req.URL.Path = "POST", "api/trip/"
 	return EncodeRequest(ctx, req, request)
 }
 
