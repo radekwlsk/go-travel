@@ -4,14 +4,13 @@
 
 Requests can be made in four modes:
 1. **Address**, where places are identified by their address match on Google Maps.
-2. **Geo-coordinates**, where places are identified by their latitude and longitude on Google Maps.
 3. **Name**, where places are searched on Google Maps by provided name and 1st result is selected.
 4. **PlaceID**, where places are identified by their Google Maps API PlaceID
 
 ```
 {
   "api_key" : string,
-  "mode": ["address"|"geo"|"name"|"id"],
+  "mode": ["address"|"name"|"id"],
   "trip_start": [int 0-23, int 0-59],
   "trip_end": [int 0-23, int 0-59],
   "trip_date": {
@@ -44,14 +43,6 @@ Requests can be made in four modes:
 >     "city": "Wrocław",
 >     "postal_code": "50-309",
 >     "country": "Poland"
->   }
->   ```
->
-> - in **Geo-coordinates** mode:
->   ```json
->   {
->     "lat": 12.21341,
->     "lng": -43.21342
 >   }
 >   ```
 >
