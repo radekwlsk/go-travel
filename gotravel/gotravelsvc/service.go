@@ -3,14 +3,12 @@ package gotravelsvc
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
-	
+
 	"errors"
-	
+
 	"github.com/AfroMetal/go-travel/utils"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
 )
@@ -67,9 +65,9 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (
 	if err != nil {
 		return "", err
 	}
-	
+
 	var place_id string
-	
+
 	{
 		r := &maps.GeocodingRequest{
 			Address: ad.toAddressString(),
@@ -81,14 +79,14 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (
 		}
 		place_id = resp[0].PlaceID
 	}
-	
+
 	return place_id, nil
 }
 
 type GeoCoordinatesDescription maps.LatLng
 
 func (gcd *GeoCoordinatesDescription) getPlaceID(*inmemService, string) (string, error) {
-	return "", errors.New("Not yet implemented")
+	return "", errors.New("not yet implemented")
 }
 
 type NameDescription struct {
@@ -96,7 +94,7 @@ type NameDescription struct {
 }
 
 func (nd *NameDescription) getPlaceID(*inmemService, string) (string, error) {
-	return "", errors.New("Not yet implemented")
+	return "", errors.New("not yet implemented")
 }
 
 type PlaceIDDescription struct {
@@ -159,45 +157,60 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		Places:   make([]*TripPlace, len(tc.Places)),
 		ClientID: uuid.New(),
 	}
-	config := mapstructure.DecoderConfig{ErrorUnused: true}
-	var placeID string
+	wg := sync.WaitGroup{}
+	wg.Add(len(tc.Places))
+	errChan := make(chan error, len(tc.Places))
 	for i, place := range tc.Places {
-		switch tc.Mode {
-		case "address":
-			config.Result = &AddressDescription{}
-		case "geo":
-			config.Result = &GeoCoordinatesDescription{}
-		case "name":
-			config.Result = &NameDescription{}
-		case "id":
-			config.Result = &PlaceIDDescription{}
-		default:
-			return Trip{}, fmt.Errorf("No such request mode: %s", tc.Mode)
-		}
-		decoder, err := mapstructure.NewDecoder(&config)
-		if err != nil {
-			return Trip{}, err
-		}
-		if err = decoder.Decode(place.Description); err != nil {
-			return Trip{}, err
-		}
-		place.Description = config.Result
-		placeID, err = place.Description.(Description).getPlaceID(s, tc.APIKey)
-		if err != nil {
-			return Trip{}, err
-		}
-		trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
+		go func(i int) {
+			defer wg.Done()
+			config := mapstructure.DecoderConfig{ErrorUnused: true}
+			var placeID string
+			switch tc.Mode {
+			case "address":
+				config.Result = &AddressDescription{}
+			case "geo":
+				config.Result = &GeoCoordinatesDescription{}
+			case "name":
+				config.Result = &NameDescription{}
+			case "id":
+				config.Result = &PlaceIDDescription{}
+			default:
+				errChan <- fmt.Errorf("no such request mode: %s", tc.Mode)
+				return
+			}
+			decoder, err := mapstructure.NewDecoder(&config)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			if err = decoder.Decode(place.Description); err != nil {
+				errChan <- err
+				return
+			}
+			place.Description = config.Result
+			placeID, err = place.Description.(Description).getPlaceID(s, tc.APIKey)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
+			errChan <- nil
+		}(i)
 	}
-	
+	wg.Wait()
+	close(errChan)
+	for err := range errChan {
+		if err != nil {
+			return Trip{}, err
+		}
+	}
+
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
-	
+
 	err = trip.Evaluate()
 	if err != nil {
 		return Trip{}, err
 	}
-	
-	decoded := pretty.Sprint(tc)
-	log.Printf("Decoded request to:\n%s", decoded)
-	
+
 	return
 }
