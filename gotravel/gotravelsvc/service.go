@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	"errors"
-
 	"github.com/AfroMetal/go-travel/utils"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
@@ -30,7 +28,7 @@ type TravelModes struct {
 }
 
 type Description interface {
-	getPlaceID(*inmemService, string) (string, error)
+	getPlaceID(*inmemService, *maps.Client) (string, error)
 }
 
 type AddressDescription struct {
@@ -60,20 +58,14 @@ func (ad *AddressDescription) toAddressString() (address string) {
 	return
 }
 
-func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (string, error) {
-	c, err := maps.NewClient(maps.WithAPIKey(apiKey))
-	if err != nil {
-		return "", err
-	}
-
+func (ad *AddressDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
 	var place_id string
-
 	{
 		r := &maps.GeocodingRequest{
 			Address: ad.toAddressString(),
 		}
 		var resp []maps.GeocodingResult
-		resp, err = c.Geocode(context.Background(), r)
+		resp, err := c.Geocode(context.Background(), r)
 		if err != nil {
 			return "", err
 		}
@@ -83,25 +75,32 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, apiKey string) (
 	return place_id, nil
 }
 
-type GeoCoordinatesDescription maps.LatLng
-
-func (gcd *GeoCoordinatesDescription) getPlaceID(*inmemService, string) (string, error) {
-	return "", errors.New("not yet implemented")
-}
-
 type NameDescription struct {
 	Name string `json:"name"`
 }
 
-func (nd *NameDescription) getPlaceID(*inmemService, string) (string, error) {
-	return "", errors.New("not yet implemented")
+func (nd *NameDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
+	var place_id string
+	{
+		r := &maps.TextSearchRequest{
+			Query: nd.Name,
+		}
+		var resp maps.PlacesSearchResponse
+		resp, err := c.TextSearch(context.Background(), r)
+		if err != nil {
+			return "", err
+		}
+		place_id = resp.Results[0].PlaceID
+	}
+
+	return place_id, nil
 }
 
 type PlaceIDDescription struct {
 	PlaceID string `json:"place_id"`
 }
 
-func (pid *PlaceIDDescription) getPlaceID(*inmemService, string) (string, error) {
+func (pid *PlaceIDDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
 	return pid.PlaceID, nil
 }
 
@@ -138,8 +137,9 @@ type Trip struct {
 	Places   []*TripPlace `json:"places"`
 }
 
-func (trip *Trip) Evaluate() error {
-	return nil
+func (t *Trip) Evaluate(c *maps.Client) error {
+	p := NewPlanner(c, t)
+	return p.Evaluate()
 }
 
 type inmemService struct {
@@ -157,19 +157,23 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		Places:   make([]*TripPlace, len(tc.Places)),
 		ClientID: uuid.New(),
 	}
+
+	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey))
+	if err != nil {
+		return Trip{}, err
+	}
+
 	wg := sync.WaitGroup{}
 	wg.Add(len(tc.Places))
 	errChan := make(chan error, len(tc.Places))
-	for i, place := range tc.Places {
-		go func(i int) {
+	for i, p := range tc.Places {
+		go func(i int, place *Place) {
 			defer wg.Done()
 			config := mapstructure.DecoderConfig{ErrorUnused: true}
 			var placeID string
 			switch tc.Mode {
 			case "address":
 				config.Result = &AddressDescription{}
-			case "geo":
-				config.Result = &GeoCoordinatesDescription{}
 			case "name":
 				config.Result = &NameDescription{}
 			case "id":
@@ -188,14 +192,14 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 				return
 			}
 			place.Description = config.Result
-			placeID, err = place.Description.(Description).getPlaceID(s, tc.APIKey)
+			placeID, err = place.Description.(Description).getPlaceID(s, client)
 			if err != nil {
 				errChan <- err
 				return
 			}
 			trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
 			errChan <- nil
-		}(i)
+		}(i, p)
 	}
 	wg.Wait()
 	close(errChan)
@@ -207,7 +211,7 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
 
-	err = trip.Evaluate()
+	err = trip.Evaluate(client)
 	if err != nil {
 		return Trip{}, err
 	}
