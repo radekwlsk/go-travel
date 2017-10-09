@@ -59,7 +59,7 @@ func (ad *AddressDescription) toAddressString() (address string) {
 }
 
 func (ad *AddressDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
-	var place_id string
+	var placeId string
 	{
 		r := &maps.GeocodingRequest{
 			Address: ad.toAddressString(),
@@ -69,10 +69,10 @@ func (ad *AddressDescription) getPlaceID(service *inmemService, c *maps.Client) 
 		if err != nil {
 			return "", err
 		}
-		place_id = resp[0].PlaceID
+		placeId = resp[0].PlaceID
 	}
 
-	return place_id, nil
+	return placeId, nil
 }
 
 type NameDescription struct {
@@ -80,7 +80,7 @@ type NameDescription struct {
 }
 
 func (nd *NameDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
-	var place_id string
+	var placeId string
 	{
 		r := &maps.TextSearchRequest{
 			Query: nd.Name,
@@ -90,10 +90,10 @@ func (nd *NameDescription) getPlaceID(service *inmemService, c *maps.Client) (st
 		if err != nil {
 			return "", err
 		}
-		place_id = resp.Results[0].PlaceID
+		placeId = resp.Results[0].PlaceID
 	}
 
-	return place_id, nil
+	return placeId, nil
 }
 
 type PlaceIDDescription struct {
@@ -114,6 +114,7 @@ type Place struct {
 	Priority     int         `json:"priority,omitempty"`
 	StayDuration int         `json:"stay_duration,omitempty"`
 	Description  interface{} `json:"description"`
+	Details      interface{} `json:"details,omitempty"`
 }
 
 type TripConfiguration struct {
@@ -130,6 +131,19 @@ type TripPlace struct {
 	Index   int    `json:"id"`
 	Place   *Place `json:"place"`
 	PlaceID string `json:"place_id"`
+}
+
+func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
+	r := &maps.PlaceDetailsRequest{
+		PlaceID: tp.PlaceID,
+	}
+	var resp maps.PlaceDetailsResult
+	resp, err := c.PlaceDetails(context.Background(), r)
+	if err != nil {
+		return err
+	}
+	tp.Place.Details = resp
+	return nil
 }
 
 type Trip struct {
@@ -191,13 +205,23 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 				errChan <- err
 				return
 			}
-			place.Description = config.Result
+			if _, ok := config.Result.(Description); ok {
+				place.Description = config.Result
+			} else {
+				errChan <- fmt.Errorf("could not parse Description")
+				return
+			}
 			placeID, err = place.Description.(Description).getPlaceID(s, client)
 			if err != nil {
 				errChan <- err
 				return
 			}
 			trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
+			err = trip.Places[i].setDetails(s, client)
+			if err != nil {
+				errChan <- err
+				return
+			}
 			errChan <- nil
 		}(i, p)
 	}
@@ -212,9 +236,10 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
 
 	err = trip.Evaluate(client)
+
 	if err != nil {
 		return Trip{}, err
 	}
 
-	return
+	return trip, nil
 }
