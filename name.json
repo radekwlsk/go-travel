@@ -1,20 +1,10 @@
 {
-  "api_key": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
+  "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
   "mode": "name",
-  "trip_start": [
-    12,
-    0
-  ],
-  "trip_end": [
-    16,
-    30
-  ],
-  "trip_date": {
-    "d": 26,
-    "m": 8,
-    "y": 2017
-  },
-  "travel_modes": {
+  "tripStart": "2018-01-08T09:00:00+01:00",
+  "tripEnd": "2018-01-08T16:30:00+01:00",
+  "timezone": "Europe/Warsaw",
+  "travelModes": {
     "driving": false,
     "walking": true,
     "transit": true,
@@ -26,28 +16,30 @@
         "name": "Muzeum Narodowe we Wrocławiu"
       },
       "priority": 8,
-      "stay_duration": 70
+      "stayDuration": 70,
+      "start": true
     },
     {
       "description": {
         "name": "Hydropolis Wrocław"
       },
       "priority": 10,
-      "stay_duration": 50
+      "stayDuration": 50
     },
     {
       "description": {
         "name": "Punkt widokowy Sky Tower"
       },
       "priority": 6,
-      "stay_duration": 40
+      "stayDuration": 40,
+      "end": true
     },
     {
       "description": {
         "name": "Muzeum Współczesne we Wrocławiu"
       },
       "priority": 8,
-      "stay_duration": 60
+      "stayDuration": 60
     }
   ]
 }

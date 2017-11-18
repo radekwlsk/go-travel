@@ -1,20 +1,9 @@
 {
-  "api_key": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
+  "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
   "mode": "address",
-  "trip_start": [
-    12,
-    0
-  ],
-  "trip_end": [
-    16,
-    30
-  ],
-  "trip_date": {
-    "d": 26,
-    "m": 8,
-    "y": 2017
-  },
-  "travel_modes": {
+  "tripStart": "2018-01-08T09:00:00+01:00",
+  "tripEnd": "2018-01-08T16:30:00+01:00",
+  "travelModes": {
     "driving": false,
     "walking": true,
     "transit": true,
@@ -27,11 +16,11 @@
         "street": "plac Powstańców Warszawy",
         "number": "5",
         "city": "Wrocław",
-        "postalcode": "48-300",
+        "postalCode": "48-300",
         "country": "Poland"
       },
       "priority": 8,
-      "stay_duration": 70
+      "stayDuration": 70
     },
     {
       "description": {
@@ -39,11 +28,11 @@
         "street": "Na Grobli",
         "number": "19-21",
         "city": "Wrocław",
-        "postalcode": "50-001",
+        "postalCode": "50-001",
         "country": "Poland"
       },
       "priority": 10,
-      "stay_duration": 50
+      "stayDuration": 50
     },
     {
       "description": {
@@ -51,7 +40,7 @@
         "street": "Powstańców Śląskich",
         "number": "95",
         "city": "Wrocław",
-        "postalcode": "53-332",
+        "postalCode": "53-332",
         "country": "Poland"
       }
     },
@@ -64,7 +53,7 @@
         "country": "Poland"
       },
       "priority": 8,
-      "stay_duration": 60
+      "stayDuration": 60
     }
   ]
 }
