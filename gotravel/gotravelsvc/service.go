@@ -2,8 +2,10 @@ package gotravelsvc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/AfroMetal/go-travel/utils"
 	"github.com/google/uuid"
@@ -36,7 +38,7 @@ type AddressDescription struct {
 	Street     string `json:"street"`
 	Number     string `json:"number"`
 	City       string `json:"city"`
-	PostalCode string `json:"postalcode,omitempty"`
+	PostalCode string `json:"postalCode,omitempty"`
 	Country    string `json:"country,omitempty"`
 }
 
@@ -104,33 +106,31 @@ func (pid *PlaceIDDescription) getPlaceID(service *inmemService, c *maps.Client)
 	return pid.PlaceID, nil
 }
 
-type Date struct {
-	Day   int `json:"d"`
-	Month int `json:"m"`
-	Year  int `json:"y"`
-}
-
 type Place struct {
 	Priority     int         `json:"priority,omitempty"`
-	StayDuration int         `json:"stay_duration,omitempty"`
+	StayDuration int         `json:"stayDuration,omitempty"`
 	Description  interface{} `json:"description"`
-	Details      interface{} `json:"details,omitempty"`
+	Start        bool        `json:"start,omitempty"`
+	End          bool        `json:"end,omitempty"`
 }
 
 type TripConfiguration struct {
-	APIKey      string      `json:"api_key"`
+	APIKey      string      `json:"apiKey"`
 	Mode        string      `json:"mode"`
-	TripStart   [2]int      `json:"trip_start,omitempty"`
-	TripEnd     [2]int      `json:"trip_end,omitempty"`
-	TripDate    Date        `json:"trip_date"`
-	TravelModes TravelModes `json:"travel_modes"`
+	TripStart   time.Time   `json:"tripStart,omitempty"`
+	TripEnd     time.Time   `json:"tripEnd,omitempty"`
+	Timezone    string      `json:"timezone,omitempty"`
+	TravelModes TravelModes `json:"travelModes"`
 	Places      []*Place    `json:"places"`
 }
 
 type TripPlace struct {
-	Index   int    `json:"id"`
-	Place   *Place `json:"place"`
-	PlaceID string `json:"place_id"`
+	Index   int         `json:"id"`
+	Place   *Place      `json:"place"`
+	PlaceID string      `json:"placeId"`
+	Arrival time.Time   `json:"arrival,omitempty"`
+	Leave   time.Time   `json:"leave,omitempty"`
+	Details interface{} `json:"details,omitempty"`
 }
 
 func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
@@ -142,13 +142,17 @@ func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
 	if err != nil {
 		return err
 	}
-	tp.Place.Details = resp
+	tp.Details = resp.OpeningHours
 	return nil
 }
 
 type Trip struct {
-	ClientID uuid.UUID    `json:"client_id"`
-	Places   []*TripPlace `json:"places"`
+	ClientID   uuid.UUID    `json:"clientId"`
+	Places     []*TripPlace `json:"places"`
+	StartPlace *TripPlace   `json:"startPlace"`
+	EndPlace   *TripPlace   `json:"endPlace"`
+	TripStart  time.Time    `json:"tripStart"`
+	TripEnd    time.Time    `json:"tripEnd"`
 }
 
 func (t *Trip) Evaluate(c *maps.Client) error {
@@ -167,14 +171,17 @@ func NewInmemService() Service {
 }
 
 func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip Trip, err error) {
+
 	trip = Trip{
-		Places:   make([]*TripPlace, len(tc.Places)),
-		ClientID: uuid.New(),
+		Places:    make([]*TripPlace, len(tc.Places)),
+		ClientID:  uuid.New(),
+		TripStart: tc.TripStart,
+		TripEnd:   tc.TripEnd,
 	}
 
 	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey))
 	if err != nil {
-		return Trip{}, err
+		return trip, err
 	}
 
 	wg := sync.WaitGroup{}
@@ -229,7 +236,28 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 	close(errChan)
 	for err := range errChan {
 		if err != nil {
-			return Trip{}, err
+			return trip, err
+		}
+	}
+
+	var start, end bool
+
+	for _, p := range trip.Places {
+		if p.Place.Start {
+			if start {
+				return trip, errors.New("Two start places defined.")
+			} else {
+				start = true
+				trip.StartPlace = p
+			}
+		}
+		if p.Place.End {
+			if end {
+				return trip, errors.New("Two end places defined.")
+			} else {
+				end = true
+				trip.EndPlace = p
+			}
 		}
 	}
 
@@ -238,7 +266,7 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 	err = trip.Evaluate(client)
 
 	if err != nil {
-		return Trip{}, err
+		return trip, err
 	}
 
 	return trip, nil
