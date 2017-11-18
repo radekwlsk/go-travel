@@ -9,16 +9,11 @@ Requests can be made in four modes:
 
 ```
 {
-  "api_key" : string,
+  "apiKey" : string,
   "mode": ["address"|"name"|"id"],
-  "trip_start": [int 0-23, int 0-59],
-  "trip_end": [int 0-23, int 0-59],
-  "trip_date": {
-    "d": int 1-31,
-    "m": int 1-12,
-    "y": int year
-  },
-  "travel_modes": {
+  "tripStart": string "YYYY-MM-DDThh:mm:ssZ",
+  "tripEnd": string "YYYY-MM-DDThh:mm:ssZ",
+  "travelModes": {
     "driving": [true|false],
     "walking": [true|false],
     "transit": [true|false],
@@ -28,7 +23,7 @@ Requests can be made in four modes:
     {
       "description": {},
       "priority": int 1-10,
-      "stay_duration": int minutes
+      "stayDuration": int minutes
     }
   ]
 }
@@ -37,11 +32,11 @@ Requests can be made in four modes:
 > - in **Address** mode:
 >   ```json
 >   {
->     "name": "Bar Placuszek",
->     "street": "Jedności Narodowej",
->     "number": "12",
+>     "name": "Muzeum Narodowe we Wrocławiu",
+>     "street": "plac Powstańców Warszawy",
+>     "number": "5",
 >     "city": "Wrocław",
->     "postal_code": "50-309",
+>     "postalCode": "48-300",
 >     "country": "Poland"
 >   }
 >   ```
@@ -49,7 +44,7 @@ Requests can be made in four modes:
 > - in **Name** mode:
 >   ```json
 >   {
->     "name": "Bar Placuszek"
+>     "name": "Muzeum Narodowe we Wrocławiu"
 >   }
 >   ```
 >
