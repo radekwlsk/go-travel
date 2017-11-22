@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/AfroMetal/go-travel/utils"
+	"github.com/afrometal/go-travel/utils"
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
