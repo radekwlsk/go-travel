@@ -5,6 +5,7 @@
 
 # User-specific stuff:
 .idea/*
+.directory
 
 # Mongo Explorer plugin:
 .idea/**/mongoSettings.xml
