@@ -3,16 +3,44 @@ package ants
 import (
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc"
 	"gonum.org/v1/gonum/mat"
+	"math"
 	"time"
 )
 
 type Used map[int]bool
 type Places map[int]*gotravelsvc.TripPlace
+
+func NewPlaces(tps []*gotravelsvc.TripPlace) Places {
+	places := make(Places, len(tps))
+	var tp *gotravelsvc.TripPlace
+	for tp = range tps {
+		places[tp.Index] = tp
+	}
+	return places
+}
+
 type Distance float32
 
 type DistanceMatrix = mat.Dense
 
+func NewDistanceMatrix(n int) *DistanceMatrix {
+	return mat.NewDense(n, n, nil)
+}
+
 type PheromonesMatrix = mat.Dense
+
+func NewPheromonesMatrix(n int) *PheromonesMatrix {
+	return mat.NewDense(n, n, nil)
+}
+
+func (p *PheromonesMatrix) Evaporate(boost, iterations int) {
+	d := float64(boost) / float64(iterations)
+	for r := 0; r < p.capRows; r++ {
+		for c := 0; c < p.capCols; c++ {
+			p.Set(r, c, math.Max(0.0, p.At(r, c)-d))
+		}
+	}
+}
 
 type TravelTimeMatrix struct {
 	matrix *mat.Dense
