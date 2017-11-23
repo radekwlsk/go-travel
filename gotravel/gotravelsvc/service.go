@@ -245,7 +245,7 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 	for _, p := range trip.Places {
 		if p.Place.Start {
 			if start {
-				return trip, errors.New("Two start places defined.")
+				return trip, errors.New("two start places defined")
 			} else {
 				start = true
 				trip.StartPlace = p
@@ -253,7 +253,7 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		}
 		if p.Place.End {
 			if end {
-				return trip, errors.New("Two end places defined.")
+				return trip, errors.New("two end places defined")
 			} else {
 				end = true
 				trip.EndPlace = p
