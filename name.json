@@ -2,8 +2,7 @@
   "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
   "mode": "name",
   "tripStart": "2018-01-08T09:00:00+01:00",
-  "tripEnd": "2018-01-08T16:30:00+01:00",
-  "timezone": "Europe/Warsaw",
+  "tripEnd": "2018-01-08T22:30:00+01:00",
   "travelModes": {
     "driving": false,
     "walking": true,
