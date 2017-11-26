@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-kit/kit/log"
 
-	"../gotravelsvc"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc"
 )
 
 func main() {
