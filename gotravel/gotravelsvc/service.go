@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/afrometal/go-travel/utils"
 	"github.com/google/uuid"
+	"github.com/kr/pretty"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
 )
@@ -117,20 +119,25 @@ type Place struct {
 type TripConfiguration struct {
 	APIKey      string      `json:"apiKey"`
 	Mode        string      `json:"mode"`
-	TripStart   time.Time   `json:"tripStart,omitempty"`
-	TripEnd     time.Time   `json:"tripEnd,omitempty"`
-	Timezone    string      `json:"timezone,omitempty"`
+	TripStart   time.Time   `json:"tripStart"`
+	TripEnd     time.Time   `json:"tripEnd"`
 	TravelModes TravelModes `json:"travelModes"`
 	Places      []*Place    `json:"places"`
 }
 
 type TripPlace struct {
-	Index   int         `json:"id"`
-	Place   *Place      `json:"place"`
-	PlaceID string      `json:"placeId"`
-	Arrival time.Time   `json:"arrival,omitempty"`
-	Leave   time.Time   `json:"leave,omitempty"`
-	Details interface{} `json:"details,omitempty"`
+	Index     int          `json:"id"`
+	Place     *Place       `json:"place"`
+	PlaceID   string       `json:"placeId"`
+	Arrival   time.Time    `json:"arrival,omitempty"`
+	Departure time.Time    `json:"departure,omitempty"`
+	Details   PlaceDetails `json:"details,omitempty"`
+}
+
+type PlaceDetails struct {
+	PermanentlyClosed   bool                      `json:"closed"`
+	OpeningHoursPeriods []maps.OpeningHoursPeriod `json:"openingHours"`
+	Location            *time.Location
 }
 
 func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
@@ -142,7 +149,13 @@ func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
 	if err != nil {
 		return err
 	}
-	tp.Details = resp.OpeningHours
+	var location *time.Location
+	location = time.FixedZone(strconv.Itoa(resp.UTCOffset), resp.UTCOffset)
+	tp.Details = PlaceDetails{
+		PermanentlyClosed:   resp.PermanentlyClosed,
+		OpeningHoursPeriods: resp.OpeningHours.Periods,
+		Location:            location,
+	}
 	return nil
 }
 
@@ -153,9 +166,10 @@ type Trip struct {
 	EndPlace   *TripPlace   `json:"endPlace"`
 	TripStart  time.Time    `json:"tripStart"`
 	TripEnd    time.Time    `json:"tripEnd"`
+	Path       []int        `json:"path"`
 }
 
-func (t *Trip) Evaluate(c *maps.Client) error {
+func (t *Trip) Evaluate(c *maps.Client) ([]int, error) {
 	p := NewPlanner(c, t)
 	return p.Evaluate()
 }
@@ -263,11 +277,12 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
 
-	err = trip.Evaluate(client)
+	trip.Path, err = trip.Evaluate(client)
 
 	if err != nil {
 		return trip, err
 	}
 
+	pretty.Println(trip.Path)
 	return trip, nil
 }
