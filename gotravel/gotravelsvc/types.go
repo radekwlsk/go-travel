@@ -1,14 +1,21 @@
 package gotravelsvc
 
 import (
-	"gonum.org/v1/gonum/mat"
 	"math"
 	"sync"
 	"time"
+
+	"gonum.org/v1/gonum/mat"
 )
 
 type Used map[int]bool
 type Places map[int]*TripPlace
+
+type Result struct {
+	path       Path
+	time       time.Duration
+	priorities int
+}
 
 func NewPlaces(tps []*TripPlace) Places {
 	places := make(Places, len(tps))
@@ -26,14 +33,15 @@ func NewDistanceMatrix(n int) *DistanceMatrix {
 
 type PheromonesMatrix struct {
 	matrix *mat.Dense
+	mutex  sync.Mutex
 }
 
-func NewPheromonesMatrix(n int, initial float64) *PheromonesMatrix {
+func NewPheromonesMatrix(n int, initial float64, mutex sync.Mutex) *PheromonesMatrix {
 	data := make([]float64, n*n)
 	for i := range data {
 		data[i] = initial
 	}
-	return &PheromonesMatrix{mat.NewDense(n, n, data)}
+	return &PheromonesMatrix{mat.NewDense(n, n, data), mutex}
 }
 
 func (p *PheromonesMatrix) Set(i, j int, v float64) {
@@ -48,9 +56,9 @@ func (p *PheromonesMatrix) AddAt(i, j int, value float64) {
 	p.Set(i, j, p.At(i, j)+value)
 }
 
-func (p *PheromonesMatrix) IntensifyAlong(path *Path, boost int, mutex *sync.Mutex) {
-	mutex.Lock()
-	defer mutex.Unlock()
+func (p *PheromonesMatrix) IntensifyAlong(path *Path, boost int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	for i := 0; i < path.Size()-1; i++ {
 		p.AddAt(path.At(i), path.At(i+1), float64(boost))
 	}
@@ -59,9 +67,9 @@ func (p *PheromonesMatrix) IntensifyAlong(path *Path, boost int, mutex *sync.Mut
 	}
 }
 
-func (p *PheromonesMatrix) Evaporate(boost, iterations int, mutex *sync.Mutex) {
-	mutex.Lock()
-	defer mutex.Unlock()
+func (p *PheromonesMatrix) Evaporate(boost, iterations int) {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 	d := float64(boost) / float64(iterations)
 	rows, cols := p.matrix.Caps()
 	for r := 0; r < rows; r++ {
@@ -79,15 +87,15 @@ func NewTravelTimeMatrix(n int) *TravelTimeMatrix {
 	return &TravelTimeMatrix{mat.NewDense(n, n, nil)}
 }
 
-func (m *TravelTimeMatrix) Set(i, j int, duration time.Duration) {
+func (m *TravelTimeMatrix) Set(i, j int, t time.Time, duration time.Duration) {
 	m.matrix.Set(i, j, float64(duration.Nanoseconds()))
 }
 
-func (m *TravelTimeMatrix) At(i, j int) time.Duration {
+func (m *TravelTimeMatrix) At(i, j int, t time.Time) time.Duration {
 	return time.Duration(m.matrix.At(i, j))
 }
 
-func (m *TravelTimeMatrix) AtAs(i, j int, as time.Duration) float64 {
+func (m *TravelTimeMatrix) AtAs(i, j int, t time.Time, as time.Duration) float64 {
 	return float64(m.matrix.At(i, j) / float64(as))
 }
 
@@ -121,6 +129,16 @@ func (p *Path) PathIndexes() []int {
 	}
 }
 
+func (p *Path) Cut(i int) {
+	p.path = p.path[:i]
+	p.len = len(p.path)
+}
+
+func (p *Path) Append(value int) {
+	p.path = append(p.path, value)
+	p.len = len(p.path)
+}
+
 func (p *Path) At(i int) int {
 	if i >= p.len {
 		panic("Array index out of bounds")
@@ -139,7 +157,7 @@ func (p *Path) TotalDistance(distances *DistanceMatrix) float64 {
 
 	tot := float64(0.0)
 
-	for i := 0; i < p.Size()-1; i++ {
+	for i := 0; i < p.len-1; i++ {
 		tot += distances.At(p.At(i), p.At(i+1))
 	}
 	if p.loop {
