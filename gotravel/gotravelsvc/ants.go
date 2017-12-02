@@ -1,13 +1,21 @@
 package gotravelsvc
 
 import (
+	"errors"
 	"math"
 	"math/rand"
 	"strconv"
-	"sync"
 	"time"
+)
 
-	"github.com/kataras/iris/core/errors"
+var (
+	ErrPlaceOpensTooLate   = errors.New("place opens too late")
+	ErrPlaceClosesTooEarly = errors.New("place closes too early")
+	ErrTripEndsTooEarly    = errors.New("trip time ends before place departure")
+	ErrCantReachEndPlace   = errors.New("can't reach set end place in time")
+	ErrTripEnded           = errors.New("no place reachable before trip time end")
+	ErrMustReturnToStart   = errors.New("must return to start place before trip ends")
+	ErrMustReachEndPlace   = errors.New("must get to end place before trip ends")
 )
 
 type Ant struct {
@@ -26,9 +34,8 @@ type Ant struct {
 	distances     *DistanceMatrix
 	times         *TravelTimeMatrix
 	pheromones    *PheromonesMatrix
-	pherMutex     *sync.Mutex
 	random        *rand.Rand
-	bestChannel   chan Path
+	resultChannel chan Result
 }
 
 func NewAnt(
@@ -36,14 +43,14 @@ func NewAnt(
 	distances *DistanceMatrix,
 	times *TravelTimeMatrix,
 	pheromones *PheromonesMatrix,
-	pherMutex *sync.Mutex,
+	resultChannel chan Result,
 ) (a *Ant) {
 	a = &Ant{
-		trip:       trip,
-		distances:  distances,
-		times:      times,
-		pheromones: pheromones,
-		pherMutex:  pherMutex,
+		trip:          trip,
+		distances:     distances,
+		times:         times,
+		pheromones:    pheromones,
+		resultChannel: resultChannel,
 	}
 	a.init()
 
@@ -62,29 +69,44 @@ func (a *Ant) TotalTime() time.Duration {
 	return a.totalTime
 }
 
-func (a *Ant) FindFood(iterations int, boost int) error {
+func (a *Ant) FindFood(boost int) {
+	err := a.generatePath()
+	if err != nil && err != ErrTripEnded {
+		panic(err.Error())
+	}
+	a.pheromones.IntensifyAlong(&a.path, boost)
+	a.resultChannel <- Result{a.path, a.totalTime, a.sumPriorities()}
+}
+
+func (a *Ant) FindFoodIterations(iterations, boost int) {
 	bestTime := time.Duration(math.MaxInt64)
+	var bestPath Path
 
 	for i := 0; i < iterations; i++ {
 		err := a.generatePath()
-		if err != nil {
-			return err
+		if err != nil && err != ErrTripEnded {
+			panic(err.Error())
 		}
 		totalTime := a.totalTime
 
 		if totalTime <= bestTime {
-			a.pheromones.IntensifyAlong(&a.path, boost, a.pherMutex)
-			a.bestPath = Path{
-				path: a.path.path,
+			a.pheromones.IntensifyAlong(&a.path, boost)
+			bestTime = totalTime
+			bestPath = Path{
 				len:  a.path.len,
 				loop: a.path.loop,
+				path: a.path.path,
 			}
 		}
 
-		a.pheromones.Evaporate(boost, iterations, a.pherMutex)
+		if err == ErrTripEnded {
+			break
+		}
+
+		a.pheromones.Evaporate(boost, iterations)
 	}
 
-	return nil
+	a.resultChannel <- Result{bestPath, bestTime, a.sumPriorities()}
 }
 
 func (a *Ant) setStart() {
@@ -107,10 +129,13 @@ func (a *Ant) init() {
 
 func (a *Ant) setStep(i int, place *TripPlace) {
 	a.path.Set(i, place.Index)
-	dur := a.times.At(a.at, place.Index)
+	dur := a.times.At(a.at, place.Index, a.currentTime)
 	stay := time.Duration(place.Place.StayDuration) * time.Minute
 	dist := a.distances.At(a.at, place.Index)
-	a.currentTime = a.currentTime.Add(dur).Add(stay)
+	a.currentTime = a.currentTime.Add(dur)
+	place.Arrival = a.currentTime
+	a.currentTime = a.currentTime.Add(stay)
+	place.Departure = a.currentTime
 	a.totalTime += dur
 	a.totalTime += stay
 	a.totalDistance += dist
@@ -126,7 +151,11 @@ func (a *Ant) before() {
 	a.path = NewPath(a.n, a.startPlace == a.endPlace)
 	a.used = make(Used, a.n)
 	a.setStep(0, a.startPlace)
-	a.bestPath = a.path
+	a.bestPath = Path{
+		len:  a.path.len,
+		loop: a.path.loop,
+	}
+	copy(a.bestPath.path, a.path.path)
 	a.currentTime = a.trip.TripStart
 	a.totalTime = time.Duration(0)
 	a.totalDistance = 0
@@ -137,21 +166,51 @@ func (a *Ant) generatePath() error {
 	a.before()
 
 	for i := 1; i < a.n; i++ {
-		next, err := a.pickNextPlace(i)
-		if err != nil {
-			return err
+		switch next, err := a.pickNextPlace(i); err {
+		case ErrMustReachEndPlace:
+			a.setStep(i, next)
+			if i+1 < a.path.Size()-1 {
+				a.path.Cut(i + 1)
+			}
+			return ErrTripEnded
+		case ErrTripEnded:
+			a.path.Cut(i)
+			return ErrTripEnded
+		case ErrMustReturnToStart:
+			if i < a.path.Size()-1 {
+				a.path.Cut(i)
+			}
+			dur := a.times.At(a.at, next.Index, a.currentTime)
+			dist := a.distances.At(a.at, next.Index)
+			a.currentTime = a.currentTime.Add(dur)
+			a.totalTime += dur
+			a.totalDistance += dist
+			a.at = next.Index
+			return ErrTripEnded
+		case nil:
+			a.setStep(i, next)
+		default:
+			panic("unexpected error returned from Ant.pickNextPlace()")
 		}
-		a.setStep(i, next)
 	}
-
 	return nil
 }
 
+//func (a *Ant) endTrip() {
+//	if a.path.loop {
+//		dur := a.times.At(a.at, a.endPlace.Index, a.currentTime)
+//		dist := a.distances.At(a.at, place.Index)
+//	}
+//}
+
 func (a *Ant) pickNextPlace(i int) (place *TripPlace, err error) {
-	final := i == a.path.len-1
+	if final := i == a.path.len-1; final && a.endPlace != nil && a.endPlace != a.startPlace {
+		return a.endPlace, nil
+	}
+
 	var available []*TripPlace
 	for _, p := range a.places {
-		if !a.isUsed(p) {
+		if !a.isUsed(p) && p != a.endPlace {
 			available = append(available, p)
 		}
 	}
@@ -159,15 +218,21 @@ func (a *Ant) pickNextPlace(i int) (place *TripPlace, err error) {
 	var pheromones []float64
 	var fitness []float64
 	for _, p := range available {
-		_, err := a.isReachable(p, final)
-		if err != nil {
+		ok, _ := a.isReachable(p)
+		if ok {
 			reachable = append(reachable, p)
 			pheromones = append(pheromones, a.pheromones.At(a.at, p.Index))
-			fitness = append(fitness, 1.0/a.times.AtAs(a.at, p.Index, time.Minute))
+			// TODO: fitness based on priority and travel time
+			fitness = append(fitness, 1.0/a.times.AtAs(a.at, p.Index, a.currentTime, time.Minute))
 		}
 	}
 	if len(reachable) == 0 {
-		return nil, errors.New("no reachable places")
+		if a.path.loop {
+			return a.endPlace, ErrMustReturnToStart
+		} else if a.endPlace != nil {
+			return a.endPlace, ErrMustReachEndPlace
+		}
+		return nil, ErrTripEnded
 	}
 	var total float64
 	for i := range reachable {
@@ -175,6 +240,7 @@ func (a *Ant) pickNextPlace(i int) (place *TripPlace, err error) {
 	}
 	for {
 		for _, r := range reachable {
+			// TODO: next place pickup based on some cost function
 			return r, nil
 			//if a.random.Float64() >= (pheromones[i]*fitness[i])/total {
 			//	return r, nil
@@ -183,8 +249,8 @@ func (a *Ant) pickNextPlace(i int) (place *TripPlace, err error) {
 	}
 }
 
-func (a *Ant) isReachable(place *TripPlace, final bool) (ok bool, err error) {
-	dur := a.times.At(a.at, place.Index)
+func (a *Ant) isReachable(place *TripPlace) (ok bool, err error) {
+	dur := a.times.At(a.at, place.Index, a.currentTime)
 	var arvl, dprt, opn, cls time.Time
 	{
 		arvl = a.currentTime.Add(dur)
@@ -203,25 +269,26 @@ func (a *Ant) isReachable(place *TripPlace, final bool) (ok bool, err error) {
 	}
 
 	if opn.After(arvl) {
-		return false, errors.New("place opens too late")
-	} else {
-		place.Arrival = arvl
+		return false, ErrPlaceOpensTooLate
 	}
 	if cls.Before(dprt) {
-		return true, errors.New("place closes too early")
-	} else {
-		place.Departure = dprt
+		return false, ErrPlaceClosesTooEarly
 	}
 
-	if final && a.path.loop {
-		fin := dprt.Add(a.times.At(place.Index, a.startPlace.Index))
+	if a.endPlace != nil {
+		fin := dprt.Add(a.times.At(place.Index, a.endPlace.Index, dprt))
 		if a.trip.TripEnd.Before(fin) {
-			return true, errors.New("can't get back to start in time")
+			return false, ErrCantReachEndPlace
 		}
-		return true, nil
 	} else if a.trip.TripEnd.Before(dprt) {
-		return true, errors.New("trip time ends before departure")
-	} else {
-		return true, nil
+		return false, ErrTripEndsTooEarly
 	}
+	return true, nil
+}
+
+func (a *Ant) sumPriorities() (sum int) {
+	for i := range a.path.path {
+		sum += a.places[i].Place.Priority
+	}
+	return
 }
