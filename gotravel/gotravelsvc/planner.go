@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	Iterations = 20
+	Iterations = 50
 	Boost      = 5
-	Ants       = 10
+	Ants       = 20
 )
 
 type Planner struct {
@@ -27,6 +27,7 @@ func NewPlanner(c *maps.Client, t *Trip) *Planner {
 
 func (planner *Planner) Evaluate() (indexes []int, err error) {
 	//var ants []*Ant
+	var length int
 	var times *TravelTimeMatrix
 	var distances *DistanceMatrix
 	var pheromones *PheromonesMatrix
@@ -35,8 +36,8 @@ func (planner *Planner) Evaluate() (indexes []int, err error) {
 
 	{
 		random := rand.New(rand.NewSource(time.Now().UnixNano()))
-		length := len(planner.trip.Places)
 
+		length = len(planner.trip.Places)
 		times = NewTravelTimeMatrix(length)
 		distances = NewDistanceMatrix(length)
 
@@ -50,8 +51,11 @@ func (planner *Planner) Evaluate() (indexes []int, err error) {
 		pheromones = NewPheromonesMatrix(length, float64(Boost), pherMutex)
 	}
 
-	var bestPath = NewDummyPath()
-	var bestTime = time.Duration(math.MaxInt64)
+	var bestResult = Result{
+		path:       NewDummyPath(),
+		time:       time.Duration(math.MaxInt64),
+		priorities: 0,
+	}
 
 	var ants [Ants]*Ant
 
@@ -59,24 +63,35 @@ func (planner *Planner) Evaluate() (indexes []int, err error) {
 		ants[i] = NewAnt(planner.trip, distances, times, pheromones, resultChannel)
 	}
 	for i := 0; i < Iterations; i++ {
+		if i%int(float64(Iterations)/10.0) == 0 {
+			pheromones = NewPheromonesMatrix(length, float64(Boost), pherMutex)
+			for i := 0; i < Ants; i++ {
+				ants[i].SetPheromones(pheromones)
+			}
+		}
 		for i := 0; i < Ants; i++ {
 			go ants[i].FindFood(Boost)
 		}
 		for i := 0; i < Ants; i++ {
 			result := <-resultChannel
-			if result.time <= bestTime {
+			if result.priorities >= bestResult.priorities && result.time <= bestResult.time {
 				pretty.Printf(
 					"better result! time: %.2f minutes, priorities: %d\n",
 					float64(result.time/time.Minute),
 					result.priorities,
 				)
 				pretty.Println(result.path.PathIndexes())
-				bestPath = result.path
-				bestTime = result.time
+				bestResult = result
 			}
 		}
 		pheromones.Evaporate(Boost, Iterations)
 	}
 
-	return bestPath.PathIndexes(), err
+	for _, place := range planner.trip.Places {
+		place.Arrival = bestResult.visitTimes.Arrivals[place.Index]
+		place.Departure = bestResult.visitTimes.Departures[place.Index]
+	}
+	planner.trip.TripEnd = planner.trip.TripStart.Add(bestResult.time)
+
+	return bestResult.path.PathIndexes(), err
 }

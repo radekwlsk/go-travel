@@ -21,6 +21,7 @@ var (
 type Ant struct {
 	trip          *Trip
 	places        Places
+	visitTimes    VisitTimes
 	startPlace    *TripPlace
 	endPlace      *TripPlace
 	n             int
@@ -75,27 +76,30 @@ func (a *Ant) FindFood(boost int) {
 		panic(err.Error())
 	}
 	a.pheromones.IntensifyAlong(&a.path, boost)
-	a.resultChannel <- Result{a.path, a.totalTime, a.sumPriorities()}
+	a.resultChannel <- Result{a.path, a.totalTime, a.sumPriorities(), a.visitTimes}
 }
 
 func (a *Ant) FindFoodIterations(iterations, boost int) {
-	bestTime := time.Duration(math.MaxInt64)
-	var bestPath Path
+	var bestResult = Result{
+		path:       NewDummyPath(),
+		time:       time.Duration(math.MaxInt64),
+		priorities: 0,
+	}
 
 	for i := 0; i < iterations; i++ {
 		err := a.generatePath()
 		if err != nil && err != ErrTripEnded {
 			panic(err.Error())
 		}
-		totalTime := a.totalTime
 
-		if totalTime <= bestTime {
+		sumPriorities := a.sumPriorities()
+
+		if sumPriorities >= bestResult.priorities && a.totalTime <= bestResult.time {
 			a.pheromones.IntensifyAlong(&a.path, boost)
-			bestTime = totalTime
-			bestPath = Path{
-				len:  a.path.len,
-				loop: a.path.loop,
-				path: a.path.path,
+			bestResult = Result{
+				path:       a.path,
+				time:       a.totalTime,
+				priorities: sumPriorities,
 			}
 		}
 
@@ -106,7 +110,8 @@ func (a *Ant) FindFoodIterations(iterations, boost int) {
 		a.pheromones.Evaporate(boost, iterations)
 	}
 
-	a.resultChannel <- Result{bestPath, bestTime, a.sumPriorities()}
+	bestResult.visitTimes = a.visitTimes
+	a.resultChannel <- bestResult
 }
 
 func (a *Ant) setStart() {
@@ -128,17 +133,17 @@ func (a *Ant) init() {
 }
 
 func (a *Ant) setStep(i int, place *TripPlace) {
-	a.path.Set(i, place.Index)
 	dur := a.times.At(a.at, place.Index, a.currentTime)
 	stay := time.Duration(place.Place.StayDuration) * time.Minute
 	dist := a.distances.At(a.at, place.Index)
 	a.currentTime = a.currentTime.Add(dur)
-	place.Arrival = a.currentTime
+	a.visitTimes.Arrivals[place.Index] = a.currentTime
 	a.currentTime = a.currentTime.Add(stay)
-	place.Departure = a.currentTime
+	a.visitTimes.Departures[place.Index] = a.currentTime
 	a.totalTime += dur
 	a.totalTime += stay
 	a.totalDistance += dist
+	a.path.Set(i, place.Index)
 	a.at = place.Index
 	a.used[a.at] = true
 }
@@ -149,6 +154,7 @@ func (a *Ant) isUsed(place *TripPlace) bool {
 
 func (a *Ant) before() {
 	a.path = NewPath(a.n, a.startPlace == a.endPlace)
+	a.visitTimes = NewVisitTimes(a.n)
 	a.used = make(Used, a.n)
 	a.setStep(0, a.startPlace)
 	a.bestPath = Path{
@@ -254,7 +260,7 @@ func (a *Ant) isReachable(place *TripPlace) (ok bool, err error) {
 	var arvl, dprt, opn, cls time.Time
 	{
 		arvl = a.currentTime.Add(dur)
-		dprt = a.currentTime.Add(dur).Add(time.Duration(place.Place.StayDuration) * time.Minute)
+		dprt = arvl.Add(time.Duration(place.Place.StayDuration) * time.Minute)
 		oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
 		o := oc.Open.Time
 		y, m, d := arvl.In(place.Details.Location).Date()
@@ -274,14 +280,15 @@ func (a *Ant) isReachable(place *TripPlace) (ok bool, err error) {
 	if cls.Before(dprt) {
 		return false, ErrPlaceClosesTooEarly
 	}
+	if a.trip.TripEnd.Before(dprt) {
+		return false, ErrTripEndsTooEarly
+	}
 
 	if a.endPlace != nil {
 		fin := dprt.Add(a.times.At(place.Index, a.endPlace.Index, dprt))
 		if a.trip.TripEnd.Before(fin) {
 			return false, ErrCantReachEndPlace
 		}
-	} else if a.trip.TripEnd.Before(dprt) {
-		return false, ErrTripEndsTooEarly
 	}
 	return true, nil
 }

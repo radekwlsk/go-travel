@@ -15,6 +15,7 @@ type Result struct {
 	path       Path
 	time       time.Duration
 	priorities int
+	visitTimes VisitTimes
 }
 
 func NewPlaces(tps []*TripPlace) Places {
@@ -97,6 +98,18 @@ func (m *TravelTimeMatrix) At(i, j int, t time.Time) time.Duration {
 
 func (m *TravelTimeMatrix) AtAs(i, j int, t time.Time, as time.Duration) float64 {
 	return float64(m.matrix.At(i, j) / float64(as))
+}
+
+type VisitTimes struct {
+	Arrivals   map[int]time.Time
+	Departures map[int]time.Time
+}
+
+func NewVisitTimes(size int) VisitTimes {
+	return VisitTimes{
+		Arrivals:   make(map[int]time.Time, size),
+		Departures: make(map[int]time.Time, size),
+	}
 }
 
 type Path struct {
