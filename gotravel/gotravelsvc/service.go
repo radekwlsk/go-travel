@@ -10,7 +10,7 @@ import (
 
 	"github.com/afrometal/go-travel/utils"
 	"github.com/google/uuid"
-	"github.com/kr/pretty"
+	"github.com/gregjones/httpcache"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
 )
@@ -193,7 +193,9 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		TripEnd:   tc.TripEnd,
 	}
 
-	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey))
+	transport := httpcache.NewMemoryCacheTransport()
+
+	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(transport.Client()))
 	if err != nil {
 		return trip, err
 	}
@@ -283,6 +285,5 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		return trip, err
 	}
 
-	pretty.Println(trip.Path)
 	return trip, nil
 }
