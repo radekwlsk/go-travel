@@ -176,11 +176,13 @@ func (t *Trip) Evaluate(c *maps.Client) ([]int, error) {
 
 type inmemService struct {
 	tripConfigurationMap *sync.Map
+	cacheTransport       *httpcache.Transport
 }
 
 func NewInmemService() Service {
 	return &inmemService{
 		tripConfigurationMap: &sync.Map{},
+		cacheTransport:       httpcache.NewMemoryCacheTransport(),
 	}
 }
 
@@ -193,9 +195,8 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 		TripEnd:   tc.TripEnd,
 	}
 
-	transport := httpcache.NewMemoryCacheTransport()
+	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(s.cacheTransport.Client()))
 
-	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(transport.Client()))
 	if err != nil {
 		return trip, err
 	}
