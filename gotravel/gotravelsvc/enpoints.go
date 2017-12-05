@@ -4,7 +4,8 @@ import (
 	"context"
 	"net/url"
 	"strings"
-	
+
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -28,24 +29,24 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 		return Endpoints{}, err
 	}
 	tgt.Path = ""
-	
+
 	options := []httptransport.ClientOption{}
-	
+
 	// Note that the request encoders need to modify the request URL, changing
 	// the path and method. That's fine: we simply need to provide specific
 	// encoders for each endpoint.
-	
+
 	return Endpoints{
 		TripPlanEndpoint: httptransport.NewClient("POST", tgt, EncodeTripPlanRequest, DecodeTripPlanResponse,
 			options...).Endpoint(),
 	}, nil
 }
 
-func (e Endpoints) TripPlan(ctx context.Context, tc TripConfiguration) (Trip, error) {
+func (e Endpoints) TripPlan(ctx context.Context, tc types.TripConfiguration) (types.Trip, error) {
 	request := tripPlanRequest{TripConfiguration: tc}
 	response, err := e.TripPlanEndpoint(ctx, request)
 	if err != nil {
-		return Trip{}, err
+		return types.Trip{}, err
 	}
 	resp := response.(tripPlanResponse)
 	return resp.Response, resp.Err
@@ -60,12 +61,12 @@ func MakeTripPlanEndpoint(s Service) endpoint.Endpoint {
 }
 
 type tripPlanRequest struct {
-	TripConfiguration TripConfiguration
+	TripConfiguration types.TripConfiguration
 }
 
 type tripPlanResponse struct {
-	Response Trip  `json:"resp,omitempty"`
-	Err      error `json:"err,omitempty"`
+	Response types.Trip `json:"resp,omitempty"`
+	Err      error      `json:"err,omitempty"`
 }
 
 func (r tripPlanResponse) error() error { return r.Err }

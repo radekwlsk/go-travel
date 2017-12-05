@@ -5,8 +5,9 @@ import (
 
 	"context"
 
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
 	"github.com/go-kit/kit/log"
-	"github.com/kr/pretty"
+	//"github.com/kr/pretty"
 )
 
 type loggingMiddleware struct {
@@ -21,12 +22,12 @@ func NewLoggingMiddleware(s Service, logger log.Logger) Service {
 	return loggingMiddleware{logger, s}
 }
 
-func (mw loggingMiddleware) TripPlan(ctx context.Context, tc TripConfiguration) (trip Trip, err error) {
+func (mw loggingMiddleware) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"method", "TripPlan",
-			"input", pretty.Sprint(tc),
-			"output", pretty.Sprint(trip),
+			//"input", pretty.Sprint(tc),
+			//"output", pretty.Sprint(trip),
 			"err", err,
 			"took", time.Since(begin),
 		)
