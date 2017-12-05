@@ -1,13 +1,11 @@
 package gotravelsvc
 
 import (
-	"time"
-
 	"context"
+	"time"
 
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
 	"github.com/go-kit/kit/log"
-	//"github.com/kr/pretty"
 )
 
 type loggingMiddleware struct {
@@ -26,8 +24,8 @@ func (mw loggingMiddleware) TripPlan(ctx context.Context, tc types.TripConfigura
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"method", "TripPlan",
-			//"input", pretty.Sprint(tc),
-			//"output", pretty.Sprint(trip),
+			"apiKey", tc.APIKey,
+			"clientID", trip.ClientID,
 			"err", err,
 			"took", time.Since(begin),
 		)
