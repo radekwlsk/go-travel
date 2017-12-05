@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sync"
-	"time"
 
-	"github.com/afrometal/go-travel/utils"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
 	"github.com/google/uuid"
 	"github.com/gregjones/httpcache"
 	"github.com/mitchellh/mapstructure"
@@ -19,180 +18,29 @@ import (
 // the actual actions performed by service on data.
 
 type Service interface {
-	TripPlan(context.Context, TripConfiguration) (Trip, error)
+	TripPlan(context.Context, types.TripConfiguration) (types.Trip, error)
 }
 
-type JSON []byte
-
-type TravelModes struct {
-	Driving   bool `json:"driving"`
-	Walking   bool `json:"walking"`
-	Transit   bool `json:"transit"`
-	Bicycling bool `json:"bicycling"`
-}
-
-type Description interface {
-	getPlaceID(*inmemService, *maps.Client) (string, error)
-}
-
-type AddressDescription struct {
-	Name       string `json:"name"`
-	Street     string `json:"street"`
-	Number     string `json:"number"`
-	City       string `json:"city"`
-	PostalCode string `json:"postalCode,omitempty"`
-	Country    string `json:"country,omitempty"`
-}
-
-func (ad *AddressDescription) toAddressString() (address string) {
-	address = fmt.Sprintf(
-		"%s, %s %s, %s%s",
-		ad.Name,
-		ad.Street,
-		ad.Number,
-		utils.IfThenElse(
-			ad.PostalCode == "",
-			ad.City,
-			fmt.Sprintf("%s %s", ad.PostalCode, ad.City)),
-		utils.IfThenElse(
-			ad.Country == "",
-			"",
-			fmt.Sprintf(", %s", ad.Country)),
-	)
-	return
-}
-
-func (ad *AddressDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
-	var placeId string
-	{
-		r := &maps.GeocodingRequest{
-			Address: ad.toAddressString(),
-		}
-		var resp []maps.GeocodingResult
-		resp, err := c.Geocode(context.Background(), r)
-		if err != nil {
-			return "", err
-		}
-		placeId = resp[0].PlaceID
-	}
-
-	return placeId, nil
-}
-
-type NameDescription struct {
-	Name string `json:"name"`
-}
-
-func (nd *NameDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
-	var placeId string
-	{
-		r := &maps.TextSearchRequest{
-			Query: nd.Name,
-		}
-		var resp maps.PlacesSearchResponse
-		resp, err := c.TextSearch(context.Background(), r)
-		if err != nil {
-			return "", err
-		}
-		placeId = resp.Results[0].PlaceID
-	}
-
-	return placeId, nil
-}
-
-type PlaceIDDescription struct {
-	PlaceID string `json:"place_id"`
-}
-
-func (pid *PlaceIDDescription) getPlaceID(service *inmemService, c *maps.Client) (string, error) {
-	return pid.PlaceID, nil
-}
-
-type Place struct {
-	Priority     int         `json:"priority,omitempty"`
-	StayDuration int         `json:"stayDuration,omitempty"`
-	Description  interface{} `json:"description"`
-	Start        bool        `json:"start,omitempty"`
-	End          bool        `json:"end,omitempty"`
-}
-
-type TripConfiguration struct {
-	APIKey      string      `json:"apiKey"`
-	Mode        string      `json:"mode"`
-	TripStart   time.Time   `json:"tripStart"`
-	TripEnd     time.Time   `json:"tripEnd"`
-	TravelModes TravelModes `json:"travelModes"`
-	Places      []*Place    `json:"places"`
-}
-
-type TripPlace struct {
-	Index     int          `json:"id"`
-	Place     *Place       `json:"place"`
-	PlaceID   string       `json:"placeId"`
-	Arrival   time.Time    `json:"arrival,omitempty"`
-	Departure time.Time    `json:"departure,omitempty"`
-	Details   PlaceDetails `json:"details,omitempty"`
-}
-
-type PlaceDetails struct {
-	PermanentlyClosed   bool                      `json:"closed"`
-	OpeningHoursPeriods []maps.OpeningHoursPeriod `json:"openingHours"`
-	Location            *time.Location
-}
-
-func (tp *TripPlace) setDetails(service *inmemService, c *maps.Client) error {
-	r := &maps.PlaceDetailsRequest{
-		PlaceID: tp.PlaceID,
-	}
-	var resp maps.PlaceDetailsResult
-	resp, err := c.PlaceDetails(context.Background(), r)
-	if err != nil {
-		return err
-	}
-	var location *time.Location
-	location = time.FixedZone(strconv.Itoa(resp.UTCOffset), resp.UTCOffset)
-	tp.Details = PlaceDetails{
-		PermanentlyClosed:   resp.PermanentlyClosed,
-		OpeningHoursPeriods: resp.OpeningHours.Periods,
-		Location:            location,
-	}
-	return nil
-}
-
-type Trip struct {
-	ClientID   uuid.UUID    `json:"clientId"`
-	Places     []*TripPlace `json:"places"`
-	StartPlace *TripPlace   `json:"startPlace"`
-	EndPlace   *TripPlace   `json:"endPlace"`
-	TripStart  time.Time    `json:"tripStart"`
-	TripEnd    time.Time    `json:"tripEnd"`
-	Path       []int        `json:"path"`
-}
-
-func (t *Trip) Evaluate(c *maps.Client) ([]int, error) {
-	p := NewPlanner(c, t)
-	return p.Evaluate()
-}
-
-type inmemService struct {
+type InmemService struct {
 	tripConfigurationMap *sync.Map
 	cacheTransport       *httpcache.Transport
 }
 
 func NewInmemService() Service {
-	return &inmemService{
+	return &InmemService{
 		tripConfigurationMap: &sync.Map{},
 		cacheTransport:       httpcache.NewMemoryCacheTransport(),
 	}
 }
 
-func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip Trip, err error) {
+func (s *InmemService) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
 
-	trip = Trip{
-		Places:    make([]*TripPlace, len(tc.Places)),
-		ClientID:  uuid.New(),
-		TripStart: tc.TripStart,
-		TripEnd:   tc.TripEnd,
+	trip = types.Trip{
+		Places:      make([]*types.TripPlace, len(tc.Places)),
+		ClientID:    uuid.New(),
+		TripStart:   tc.TripStart,
+		TripEnd:     tc.TripEnd,
+		TravelModes: tc.TravelModes.MapsModes(),
 	}
 
 	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(s.cacheTransport.Client()))
@@ -205,17 +53,17 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 	wg.Add(len(tc.Places))
 	errChan := make(chan error, len(tc.Places))
 	for i, p := range tc.Places {
-		go func(i int, place *Place) {
+		go func(i int, place *types.Place) {
 			defer wg.Done()
 			config := mapstructure.DecoderConfig{ErrorUnused: true}
 			var placeID string
 			switch tc.Mode {
 			case "address":
-				config.Result = &AddressDescription{}
+				config.Result = &types.AddressDescription{}
 			case "name":
-				config.Result = &NameDescription{}
+				config.Result = &types.NameDescription{}
 			case "id":
-				config.Result = &PlaceIDDescription{}
+				config.Result = &types.PlaceIDDescription{}
 			default:
 				errChan <- fmt.Errorf("no such request mode: %s", tc.Mode)
 				return
@@ -229,19 +77,19 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 				errChan <- err
 				return
 			}
-			if _, ok := config.Result.(Description); ok {
+			if _, ok := config.Result.(types.Description); ok {
 				place.Description = config.Result
 			} else {
 				errChan <- fmt.Errorf("could not parse Description")
 				return
 			}
-			placeID, err = place.Description.(Description).getPlaceID(s, client)
+			placeID, err = place.Description.(types.Description).GetPlaceID(s, client)
 			if err != nil {
 				errChan <- err
 				return
 			}
-			trip.Places[i] = &TripPlace{Index: i, Place: place, PlaceID: placeID}
-			err = trip.Places[i].setDetails(s, client)
+			trip.Places[i] = &types.TripPlace{Index: i, Place: place, PlaceID: placeID}
+			err = trip.Places[i].SetDetails(s, client)
 			if err != nil {
 				errChan <- err
 				return
@@ -280,7 +128,8 @@ func (s *inmemService) TripPlan(ctx context.Context, tc TripConfiguration) (trip
 
 	s.tripConfigurationMap.Store(trip.ClientID, tc)
 
-	trip.Path, err = trip.Evaluate(client)
+	p := planner.NewPlanner(client, &trip)
+	trip.Steps, err = p.Evaluate()
 
 	if err != nil {
 		return trip, err
