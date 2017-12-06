@@ -1,14 +1,9 @@
 {
-  "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
+  "apiKey": "AIzaSyB5vZbBb8b9fH2empHRskJrKu4TZXW6blM",
   "mode": "name",
   "tripStart": "2018-01-08T11:00:00+01:00",
-  "tripEnd": "2018-01-08T16:30:00+01:00",
-  "travelModes": {
-    "driving": false,
-    "walking": true,
-    "transit": true,
-    "bicycling": false
-  },
+  "tripEnd": "2018-01-08T17:30:00+01:00",
+  "travelMode": "bicycling",
   "places": [
     {
       "description": {
