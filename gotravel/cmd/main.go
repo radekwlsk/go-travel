@@ -31,7 +31,7 @@ func main() {
 
 	var s gotravelsvc.Service
 	{
-		s = gotravelsvc.NewInmemService()
+		s = gotravelsvc.NewService()
 		s = gotravelsvc.NewLoggingMiddleware(s, logger)
 		//s = gotravelsvc.NewInstrumentingMiddleware(s)
 	}

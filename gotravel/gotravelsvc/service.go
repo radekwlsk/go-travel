@@ -17,24 +17,21 @@ import (
 
 // Service interface definition and basic service methods implementation,
 // the actual actions performed by service on data.
-
 type Service interface {
 	TripPlan(context.Context, types.TripConfiguration) (types.Trip, error)
 }
 
-type InmemService struct {
-	tripConfigurationMap *sync.Map
-	cacheTransport       *httpcache.Transport
+type service struct {
+	cacheTransport *httpcache.Transport
 }
 
-func NewInmemService() Service {
-	return &InmemService{
-		tripConfigurationMap: &sync.Map{},
-		cacheTransport:       httpcache.NewMemoryCacheTransport(),
+func NewService() Service {
+	return &service{
+		cacheTransport: httpcache.NewMemoryCacheTransport(),
 	}
 }
 
-func (s *InmemService) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
+func (s *service) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
 
 	if !types.ValidTravelMode(tc.TravelMode) {
 		return types.Trip{}, errors.New(fmt.Sprintf(
@@ -134,8 +131,6 @@ func (s *InmemService) TripPlan(ctx context.Context, tc types.TripConfiguration)
 			}
 		}
 	}
-
-	s.tripConfigurationMap.Store(trip.ClientID, tc)
 
 	p := planner.NewPlanner(client, &trip)
 	trip.Steps, err = p.Evaluate()
