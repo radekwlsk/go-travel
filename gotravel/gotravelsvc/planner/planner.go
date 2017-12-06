@@ -23,8 +23,8 @@ const (
 type Planner struct {
 	client    *maps.Client
 	trip      *traveltypes.Trip
-	times     *types.TravelTimeMatrix
-	distances *types.DistanceMatrix
+	times     *types.TimesMappedDurationsMatrix
+	distances *types.TimesMappedDistancesMatrix
 }
 
 func NewPlanner(c *maps.Client, t *traveltypes.Trip) *Planner {
@@ -37,14 +37,14 @@ func NewPlanner(c *maps.Client, t *traveltypes.Trip) *Planner {
 func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 	var ants [Ants]*Ant
 	var length int
-	var times *types.TravelTimeMatrix
-	var distances *types.DistanceMatrix
+	var durations *types.TimesMappedDurationsMatrix
+	var distances *types.TimesMappedDistancesMatrix
 	var pheromones *types.PheromonesMatrix
 	var pherMutex = sync.Mutex{}
 	var resultChannel = make(chan types.Result)
 
 	length = len(planner.trip.Places)
-	times, distances, err = planner.getTimesAndDistances()
+	durations, distances, err = planner.durationsAndDistances()
 
 	if err != nil {
 		return nil, err
@@ -55,7 +55,7 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 	var bestResult = types.NewEmptyResult()
 
 	for i := 0; i < Ants; i++ {
-		ants[i] = NewAnt(planner.trip, distances, times, pheromones, resultChannel)
+		ants[i] = NewAnt(planner.trip, distances, durations, pheromones, resultChannel)
 	}
 	for i := 0; i < Iterations; i++ {
 		//if i%int(float64(Iterations)/10.0) == 0 {
@@ -90,7 +90,11 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 	return bestResult.Path().Steps, err
 }
 
-func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, distances *types.DistanceMatrix, err error) {
+func (planner *Planner) durationsAndDistances() (
+	durations *types.TimesMappedDurationsMatrix,
+	distances *types.TimesMappedDistancesMatrix,
+	err error,
+) {
 	length := len(planner.trip.Places)
 	currentTime := planner.trip.TripStart
 	var checkedTimes []time.Time
@@ -99,7 +103,7 @@ func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, d
 		checkedTimes = append(checkedTimes, currentTime)
 		currentTime = currentTime.Add(timeDelta)
 	}
-	times = types.NewTravelTimeMatrix(length, checkedTimes)
+	durations = types.NewTravelTimeMatrix(length, checkedTimes)
 	distances = types.NewDistanceMatrix(length, checkedTimes)
 	destinationAddresses := make([]string, length)
 	originAddresses := make([]string, length)
@@ -117,20 +121,20 @@ func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, d
 		var resp *maps.DistanceMatrixResponse
 		resp, err := planner.client.DistanceMatrix(context.Background(), r)
 		if err != nil {
-			return times, distances, err
+			return durations, distances, err
 		}
 		for i, row := range resp.Rows {
 			for j, element := range row.Elements {
 				if i != j {
 					if element.Status == "OK" {
 						if planner.trip.TravelMode == maps.TravelModeDriving {
-							times.Set(i, j, t, element.DurationInTraffic)
+							durations.Set(i, j, t, element.DurationInTraffic)
 						} else {
-							times.Set(i, j, t, element.Duration)
+							durations.Set(i, j, t, element.Duration)
 						}
 						distances.Set(i, j, t, int64(element.Distance.Meters))
 					} else {
-						return times, distances, errors.New(fmt.Sprintf(
+						return durations, distances, errors.New(fmt.Sprintf(
 							"could not get distances between %s and %s at %s",
 							originAddresses[i],
 							destinationAddresses[j],
@@ -142,5 +146,5 @@ func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, d
 		}
 	}
 
-	return times, distances, nil
+	return durations, distances, nil
 }

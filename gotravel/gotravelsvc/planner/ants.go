@@ -47,8 +47,8 @@ type Ant struct {
 	currentTime   time.Time
 	totalTime     time.Duration
 	totalDistance int64
-	distances     *types.DistanceMatrix
-	times         *types.TravelTimeMatrix
+	distances     *types.TimesMappedDistancesMatrix
+	times         *types.TimesMappedDurationsMatrix
 	pheromones    *types.PheromonesMatrix
 	random        *rand.Rand
 	resultChannel chan types.Result
@@ -56,8 +56,8 @@ type Ant struct {
 
 func NewAnt(
 	trip *traveltypes.Trip,
-	distances *types.DistanceMatrix,
-	times *types.TravelTimeMatrix,
+	distances *types.TimesMappedDistancesMatrix,
+	times *types.TimesMappedDurationsMatrix,
 	pheromones *types.PheromonesMatrix,
 	resultChannel chan types.Result,
 ) (a *Ant) {

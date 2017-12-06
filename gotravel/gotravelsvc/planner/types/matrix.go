@@ -83,12 +83,12 @@ func (m *timesMappedMatrix) matrixClosestTo(t time.Time) *mat.Dense {
 	return m.matrices[closest]
 }
 
-type TravelTimeMatrix struct {
+type TimesMappedDurationsMatrix struct {
 	timesMappedMatrix
 }
 
-func NewTravelTimeMatrix(n int, times []time.Time) *TravelTimeMatrix {
-	return &TravelTimeMatrix{
+func NewTravelTimeMatrix(n int, times []time.Time) *TimesMappedDurationsMatrix {
+	return &TimesMappedDurationsMatrix{
 		newTimesMappedMatrix(n, times),
 	}
 }
@@ -101,32 +101,32 @@ func absTimeDifference(t1 time.Time, t2 time.Time) time.Duration {
 	}
 }
 
-func (m *TravelTimeMatrix) Set(i, j int, t time.Time, duration time.Duration) {
+func (m *TimesMappedDurationsMatrix) Set(i, j int, t time.Time, duration time.Duration) {
 	m.matrixClosestTo(t).Set(i, j, float64(duration.Nanoseconds()))
 }
 
-func (m *TravelTimeMatrix) At(i, j int, t time.Time) time.Duration {
+func (m *TimesMappedDurationsMatrix) At(i, j int, t time.Time) time.Duration {
 	return time.Duration(m.matrixClosestTo(t).At(i, j))
 }
 
-func (m *TravelTimeMatrix) AtAs(i, j int, t time.Time, as time.Duration) float64 {
+func (m *TimesMappedDurationsMatrix) AtAs(i, j int, t time.Time, as time.Duration) float64 {
 	return float64(m.matrixClosestTo(t).At(i, j) / float64(as))
 }
 
-type DistanceMatrix struct {
+type TimesMappedDistancesMatrix struct {
 	timesMappedMatrix
 }
 
-func NewDistanceMatrix(n int, times []time.Time) *DistanceMatrix {
-	return &DistanceMatrix{
+func NewDistanceMatrix(n int, times []time.Time) *TimesMappedDistancesMatrix {
+	return &TimesMappedDistancesMatrix{
 		newTimesMappedMatrix(n, times),
 	}
 }
 
-func (m *DistanceMatrix) Set(i, j int, t time.Time, value int64) {
+func (m *TimesMappedDistancesMatrix) Set(i, j int, t time.Time, value int64) {
 	m.matrixClosestTo(t).Set(i, j, float64(value))
 }
 
-func (m *DistanceMatrix) At(i, j int, t time.Time) int64 {
+func (m *TimesMappedDistancesMatrix) At(i, j int, t time.Time) int64 {
 	return int64(m.matrixClosestTo(t).At(i, j))
 }
