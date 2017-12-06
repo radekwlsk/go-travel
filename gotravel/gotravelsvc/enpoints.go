@@ -30,7 +30,7 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 	}
 	tgt.Path = ""
 
-	options := []httptransport.ClientOption{}
+	var options []httptransport.ClientOption
 
 	// Note that the request encoders need to modify the request URL, changing
 	// the path and method. That's fine: we simply need to provide specific
