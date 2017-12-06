@@ -1,0 +1,96 @@
+@startuml
+
+actor Client as C
+
+box "Gotravel Service"
+ participant "HTTP Transport " as T
+ participant "Endpoint layer " as E
+ participant "Service layer " as S
+ participant "Planner " as P
+end box
+collections "GoogleMaps APIs " as G
+
+C -> T: send Trip Configuration JSON Request
+activate T
+T -> T: DecodeTripPlanRequest
+T -> E: TripPlan
+deactivate T
+activate E
+note over E: logging middleware\n'wraps' Endpoint
+E -> E: log Request
+E -> E: TripPlan
+activate E
+note over E: control passed\nto real Endpoint
+E -> E: create tripPlanRequest
+E -> S: TripPlan
+
+activate S
+S -> S: create Trip
+S -> S: create GoogleMapsAPI client
+note left: using Client's\nAPI key
+
+loop for each place
+ S -> S: decode Place Description
+ note left: according\nto selected mode
+ |||
+ S -> S: GetPlaceID
+ activate S
+ alt mode "placeid"
+ else mode "address"
+ S -> G: GeocodingRequest
+ S <- G: GeocodingResult
+ else mode "name"
+ S -> G: TextSearchRequest
+ S <- G: PlacesSearchResponse
+ end alt
+ S -> S: return and save PlaceID
+ deactivate S
+ |||
+ S -> G: PlaceDetailsRequest
+ S <- G: PlaceDetailsResult
+ S -> S: set PlaceDetails
+end loop
+
+S -> S: check and set\nStartPlace and EndPlace
+
+create P
+S -> P: NewPlanner
+S -> P: Evaluate
+activate P
+P -> P: getTimesAndDistances
+activate P
+loop for every 4 hours
+ P -> G: DistanceMatrixRequest
+ P <- G: DistanceMatrixResponse
+ P -> P: update durations, durations
+end loop
+P -> P: return durations, distances
+deactivate P
+|||
+ref over P
+ ACO described
+ on separate
+ activity diagram
+end
+|||
+S <- P: Steps
+destroy P
+E <- S: Trip
+
+deactivate S
+
+E -> E: create tripPlanResponse
+E -> E: return tripPlanResponse
+deactivate E
+E -> E: log Response
+T <- E: tripPlanResponse
+deactivate E
+activate T
+T -> T: EncodeTripPlanResponse
+C <- T: Trip Response
+deactivate T
+
+
+hide footbox
+
+@enduml
