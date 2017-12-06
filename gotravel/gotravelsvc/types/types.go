@@ -19,36 +19,41 @@ type Place struct {
 	End          bool        `json:"end,omitempty"`
 }
 
-type TravelModes struct {
-	Driving   bool `json:"driving"`
-	Walking   bool `json:"walking"`
-	Transit   bool `json:"transit"`
-	Bicycling bool `json:"bicycling"`
+var TravelModeOptions = []string{
+	"bicycling",
+	"walking",
+	"transit",
+	"driving",
 }
 
-func (tm *TravelModes) MapsModes() (modes []maps.Mode) {
-	if tm.Driving {
-		modes = append(modes, maps.TravelModeDriving)
+func ValidTravelMode(mode string) bool {
+	for _, m := range TravelModeOptions {
+		if m == mode {
+			return true
+		}
 	}
-	if tm.Walking {
-		modes = append(modes, maps.TravelModeWalking)
-	}
-	if tm.Transit {
-		modes = append(modes, maps.TravelModeTransit)
-	}
-	if tm.Bicycling {
-		modes = append(modes, maps.TravelModeBicycling)
-	}
-	return
+	return false
+}
+
+type Trip struct {
+	ClientID      uuid.UUID    `json:"clientId"`
+	Places        []*TripPlace `json:"places"`
+	StartPlace    *TripPlace   `json:"-"`
+	EndPlace      *TripPlace   `json:"-"`
+	TripStart     time.Time    `json:"tripStart"`
+	TripEnd       time.Time    `json:"tripEnd"`
+	TotalDistance int64        `json:"totalDistance"`
+	Steps         []Step       `json:"steps"`
+	TravelMode    maps.Mode    `json:"travelMode"`
 }
 
 type TripConfiguration struct {
-	APIKey      string      `json:"apiKey"`
-	Mode        string      `json:"mode"`
-	TripStart   time.Time   `json:"tripStart"`
-	TripEnd     time.Time   `json:"tripEnd"`
-	TravelModes TravelModes `json:"travelModes"`
-	Places      []*Place    `json:"places"`
+	APIKey     string    `json:"apiKey"`
+	Mode       string    `json:"mode"`
+	TripStart  time.Time `json:"tripStart"`
+	TripEnd    time.Time `json:"tripEnd"`
+	TravelMode string    `json:"travelMode"`
+	Places     []*Place  `json:"places"`
 }
 
 type PlaceDetails struct {
@@ -88,11 +93,10 @@ func (tp *TripPlace) SetDetails(service interface{}, c *maps.Client) error {
 }
 
 type Step struct {
-	From       int           `json:"from"`
-	To         int           `json:"to"`
-	Duration   time.Duration `json:"time"`
-	Distance   int64         `json:"distance"`
-	TravelMode maps.Mode     `json:"mode"`
+	From     int           `json:"from"`
+	To       int           `json:"to"`
+	Duration time.Duration `json:"time"`
+	Distance int64         `json:"distance"`
 }
 
 type Path struct {
@@ -240,16 +244,4 @@ type PlaceIDDescription struct {
 
 func (pid *PlaceIDDescription) GetPlaceID(service interface{}, c *maps.Client) (string, error) {
 	return pid.PlaceID, nil
-}
-
-type Trip struct {
-	ClientID      uuid.UUID    `json:"clientId"`
-	Places        []*TripPlace `json:"places"`
-	StartPlace    *TripPlace   `json:"-"`
-	EndPlace      *TripPlace   `json:"-"`
-	TripStart     time.Time    `json:"tripStart"`
-	TripEnd       time.Time    `json:"tripEnd"`
-	TotalDistance int64        `json:"totalDistance"`
-	Steps         []Step       `json:"steps"`
-	TravelModes   []maps.Mode  `json:"-"`
 }

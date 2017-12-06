@@ -112,6 +112,7 @@ func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, d
 			Origins:       originAddresses,
 			Destinations:  destinationAddresses,
 			DepartureTime: strconv.FormatInt(t.Unix(), 10),
+			Mode:          planner.trip.TravelMode,
 		}
 		var resp *maps.DistanceMatrixResponse
 		resp, err := planner.client.DistanceMatrix(context.Background(), r)
@@ -122,7 +123,11 @@ func (planner *Planner) getTimesAndDistances() (times *types.TravelTimeMatrix, d
 			for j, element := range row.Elements {
 				if i != j {
 					if element.Status == "OK" {
-						times.Set(i, j, t, element.DurationInTraffic)
+						if planner.trip.TravelMode == maps.TravelModeDriving {
+							times.Set(i, j, t, element.DurationInTraffic)
+						} else {
+							times.Set(i, j, t, element.Duration)
+						}
 						distances.Set(i, j, t, int64(element.Distance.Meters))
 					} else {
 						return times, distances, errors.New(fmt.Sprintf(

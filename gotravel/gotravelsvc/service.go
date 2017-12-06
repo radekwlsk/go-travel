@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner"
@@ -35,12 +36,20 @@ func NewInmemService() Service {
 
 func (s *InmemService) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
 
+	if !types.ValidTravelMode(tc.TravelMode) {
+		return types.Trip{}, errors.New(fmt.Sprintf(
+			"'%s' is not a valid travel mode, available modes are: %s",
+			tc.TravelMode,
+			strings.Join(types.TravelModeOptions, ", "),
+		))
+	}
+
 	trip = types.Trip{
-		Places:      make([]*types.TripPlace, len(tc.Places)),
-		ClientID:    uuid.New(),
-		TripStart:   tc.TripStart,
-		TripEnd:     tc.TripEnd,
-		TravelModes: tc.TravelModes.MapsModes(),
+		Places:     make([]*types.TripPlace, len(tc.Places)),
+		ClientID:   uuid.New(),
+		TripStart:  tc.TripStart,
+		TripEnd:    tc.TripEnd,
+		TravelMode: maps.Mode(tc.TravelMode),
 	}
 
 	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(s.cacheTransport.Client()))
