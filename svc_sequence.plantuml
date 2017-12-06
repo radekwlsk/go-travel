@@ -16,11 +16,11 @@ T -> T: DecodeTripPlanRequest
 T -> E: TripPlan
 deactivate T
 activate E
-note over E: logging middleware\n'wraps' Endpoint
 E -> E: log Request
+note left: logging middleware\n'wraps' Endpoint
 E -> E: TripPlan
 activate E
-note over E: control passed\nto real Endpoint
+note over E: control passed to real Endpoint
 E -> E: create tripPlanRequest
 E -> S: TripPlan
 
@@ -32,7 +32,6 @@ note left: using Client's\nAPI key
 loop for each place
  S -> S: decode Place Description
  note left: according\nto selected mode
- |||
  S -> S: GetPlaceID
  activate S
  alt mode "placeid"
@@ -45,7 +44,6 @@ loop for each place
  end alt
  S -> S: return and save PlaceID
  deactivate S
- |||
  S -> G: PlaceDetailsRequest
  S <- G: PlaceDetailsResult
  S -> S: set PlaceDetails
@@ -68,8 +66,7 @@ P -> P: return durations, distances
 deactivate P
 |||
 ref over P
- ACO described
- on separate
+ ACO on separate
  activity diagram
 end
 |||
@@ -79,8 +76,7 @@ E <- S: Trip
 
 deactivate S
 
-E -> E: create tripPlanResponse
-E -> E: return tripPlanResponse
+E -> E: create and return tripPlanResponse
 deactivate E
 E -> E: log Response
 T <- E: tripPlanResponse
