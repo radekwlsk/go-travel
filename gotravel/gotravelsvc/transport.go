@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	
+
 	"github.com/gorilla/mux"
-	
+
 	"bytes"
 	"errors"
 	"io/ioutil"
-	
+
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -22,14 +22,14 @@ func MakeHTTPHandler(s Service, logger log.Logger) http.Handler {
 		httptransport.ServerErrorLogger(logger),
 		httptransport.ServerErrorEncoder(errorEncoder),
 	}
-	
+
 	r.Methods("POST").Path("/api/trip/").Handler(httptransport.NewServer(
 		e.TripPlanEndpoint,
 		DecodeTripPlanRequest,
 		EncodeResponse,
 		options...,
 	))
-	
+
 	return r
 }
 
@@ -91,9 +91,31 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 		panic("encodeError with nil error")
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(errToStatus(err))
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"err": err.Error(),
 	})
+}
+
+func errToStatus(err error) int {
+	switch err {
+	case
+		ErrAPIKeyEmpty,
+		ErrModeEmpty,
+		ErrTripStartEmpty,
+		ErrTripEndEmpty,
+		ErrNotEnoughPlaces,
+		ErrBadTimeFormat,
+		ErrBadTime,
+		ErrEndBeforeStart,
+		ErrBadDescription,
+		ErrTwoStartPlaces,
+		ErrTwoEndPlaces,
+		ErrBadMode,
+		ErrBadTravelMode:
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }
 
 type errorWrapper struct {

@@ -138,11 +138,11 @@ func (a *Ant) setStart() {
 
 func (a *Ant) init() {
 	a.n = len(a.trip.Places)
+	a.random = rand.New(rand.NewSource(time.Now().UnixNano()))
 	a.places = NewPlaces(a.trip.Places)
 	a.setStart()
 	a.endPlace = a.trip.EndPlace
 	a.before()
-	a.random = rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 func (a *Ant) setStep(i int, place *traveltypes.TripPlace) {

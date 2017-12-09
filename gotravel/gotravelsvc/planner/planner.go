@@ -3,6 +3,7 @@ package planner
 import (
 	"context"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 	"time"
@@ -14,10 +15,10 @@ import (
 	"googlemaps.github.io/maps"
 )
 
-const (
-	Iterations = 50
+var (
+	Iterations = 1000
 	Boost      = 5
-	Ants       = 50
+	Ants       = 5
 )
 
 type Planner struct {
@@ -35,7 +36,6 @@ func NewPlanner(c *maps.Client, t *traveltypes.Trip) *Planner {
 }
 
 func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
-	var ants [Ants]*Ant
 	var length int
 	var durations *types.TimesMappedDurationsMatrix
 	var distances *types.TimesMappedDistancesMatrix
@@ -44,6 +44,10 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 	var resultChannel = make(chan types.Result)
 
 	length = len(planner.trip.Places)
+
+	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
+	var ants = make([]*Ant, Ants)
+
 	durations, distances, err = planner.durationsAndDistances()
 
 	if err != nil {

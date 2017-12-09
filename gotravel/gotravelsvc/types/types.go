@@ -20,19 +20,16 @@ type Place struct {
 }
 
 var TravelModeOptions = []string{
-	"bicycling",
 	"walking",
+	"bicycling",
 	"transit",
 	"driving",
 }
 
-func ValidTravelMode(mode string) bool {
-	for _, m := range TravelModeOptions {
-		if m == mode {
-			return true
-		}
-	}
-	return false
+var ModeOptions = []string{
+	"name",
+	"address",
+	"id",
 }
 
 type Trip struct {
@@ -48,19 +45,19 @@ type Trip struct {
 }
 
 type TripConfiguration struct {
-	APIKey     string    `json:"apiKey"`
-	Mode       string    `json:"mode"`
-	TripStart  time.Time `json:"tripStart"`
-	TripEnd    time.Time `json:"tripEnd"`
-	TravelMode string    `json:"travelMode"`
-	Places     []*Place  `json:"places"`
+	APIKey     string   `json:"apiKey"`
+	Mode       string   `json:"mode"`
+	TripStart  string   `json:"tripStart"`
+	TripEnd    string   `json:"tripEnd"`
+	TravelMode string   `json:"travelMode,omitempty"`
+	Places     []*Place `json:"places"`
 }
 
 type PlaceDetails struct {
 	PermanentlyClosed   bool                      `json:"closed"`
 	OpeningHoursPeriods []maps.OpeningHoursPeriod `json:"openingHours"`
-	Location            *time.Location
-	FormattedAddress    string
+	Location            *time.Location            `json:"-"`
+	FormattedAddress    string                    `json:"formattedAddress"`
 }
 
 type TripPlace struct {
@@ -82,7 +79,11 @@ func (tp *TripPlace) SetDetails(service interface{}, c *maps.Client) error {
 		return err
 	}
 	var location *time.Location
-	location = time.FixedZone(strconv.Itoa(resp.UTCOffset), resp.UTCOffset)
+	{
+		offset := resp.UTCOffset * 60
+		name := strconv.Itoa(resp.UTCOffset / 60)
+		location = time.FixedZone(name, offset)
+	}
 	tp.Details = PlaceDetails{
 		PermanentlyClosed:   resp.PermanentlyClosed,
 		OpeningHoursPeriods: resp.OpeningHours.Periods,
@@ -180,6 +181,10 @@ type AddressDescription struct {
 	City       string `json:"city"`
 	PostalCode string `json:"postalCode,omitempty"`
 	Country    string `json:"country,omitempty"`
+}
+
+func (ad *AddressDescription) IsEmpty() bool {
+	return ad.Name == "" && ad.Street == "" && ad.City == ""
 }
 
 func (ad *AddressDescription) toAddressString() (address string) {
