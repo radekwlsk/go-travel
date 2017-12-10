@@ -1,0 +1,66 @@
+@startuml
+
+start
+
+:reset: ""**path**"", ""**visitTimes**"", ""**currentTime**"", ""**used**"", ""**totalTime**"", ""**totalDistance**"";
+
+if (""trip.StartPlace"") then (nil)
+    :pick ""**startPlace**"" at random;
+else (set)
+    :set ""**startPlace**"" to ""trip.StartPlace"";
+endif
+
+:add ""**startPlace**"" to ""**path**""
+mark ""**startPlace**"" as used
+set ""**visitTimes**"" for ""**startPlace**""
+update ""**totalTime**"" by stay duration
+advance ""**currentTime**"" by stay duration;
+
+repeat
+    if (""place, err = pickNextPlace()"") then (err != nil)
+        if (err is ""ErrMustReachEndPlace"") then (yes)
+            :add ""**endPlace**"" to path
+            mark ""**endPlace**"" as used
+            set ""**visitTimes**"" for ""**endPlace**""
+            update ""**totalTime**"" by
+            travel time and stay duration
+            update ""**totalDistance**""
+            advance ""**currentTime**"" by
+            travel time and stay duration
+            add step to ""**endPlace**"";
+            if (all places visited?) then (no)
+                :cut ""**path**"" at current place;
+            endif
+        elseif (err is ""ErrMustReturnToStart"") then (yes)
+            if (all places visited?) then (no)
+                :cut ""**path**"" at current place;
+            endif
+            :update ""**totalTime**"" by travel time
+            update ""**totalDistance**""
+            advance ""**currentTime**"" by travel time
+            add step to ""**startPlace**"";
+        else (err is ""ErrTripEnded"")
+            :cut ""**path**"" at current place;
+        endif
+        break
+    else ()
+        :add ""**place**"" to path
+        mark ""**place**"" as used
+        set ""**visitTimes**"" for ""**place**""
+        update ""**totalTime**"" by
+        travel time and stay duration
+        update ""**totalDistance**""
+        advance ""**currentTime**"" by
+        travel time and stay duration
+        add step to ""**place**"";
+    endif
+
+repeat while (all places visited?) is (no)
+
+:prepare ""**Result**"";
+
+:send ""**Result**"" over ""**channel**"";
+
+stop
+
+@enduml

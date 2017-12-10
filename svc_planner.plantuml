@@ -1,0 +1,45 @@
+@startuml
+
+start
+
+note: distances and durations are set
+
+:create ""**resultChannel**"";
+
+:initialize ""**pheromones**"", ""**bestResult**"" and ""**Ant**"" swarm as ""[Ants]**swarm**"";
+
+while (""Iterations"" of iterations run?) is (no)
+    fork
+        :""**go** swarm[0].FindFood()"";
+        detach
+    fork again
+        :""**go** swarm[1].FindFood()"";
+        detach
+    fork again
+        -[hidden]->
+        :...;
+        detach
+    fork again
+        :""**go** swarm[Ants-1].FindFood()"";
+        detach
+    end fork
+
+    while (received results from all ants?) is (no)
+        :receive ""**result**"" over ""**resultChannel**"";
+
+        if (""**result**.priority"" > ""**bestResult**.priority""
+or ""**result**.priority"" = ""**bestResult**.priority""
+and ""**result**.totalTime"" < ""**bestResult**.totalTime"") then (true)
+            :overwrite ""**bestResult**"" with ""**result**"";
+            :intensify ""**pheromones**"" along the new best path;
+        else (false)
+        endif
+    endwhile (yes)
+    :evaporate ""**pheromones**"";
+endwhile (yes)
+
+:update ""**trip**"" with ""**bestResult**"" data: arrival/departure times, trip end time, total distance, start/end place if not set;
+
+:return ""steps []*Step"" from ""**bestResult**"";
+
+@enduml

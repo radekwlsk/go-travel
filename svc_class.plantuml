@@ -1,0 +1,181 @@
+@startuml
+
+class Planner {
+	client *maps.Client
+	trip *Trip
+
+	Evaluate() ([]Step, error)
+	durationsAndDistances() (*TimesMappedDurationsMatrix, *TimesMappedDistancesMatrix, error)
+}
+Planner *.. Trip
+
+class Ant {
+ trip *Trip
+	places PlacesMap
+	visitTimes VisitTimes
+	startPlace *Place
+	endPlace *Place
+	n int
+	bestPath Path
+	path Path
+	at int
+	used Used
+	currentTime time.Time
+	totalTime time.Duration
+	totalDistance int64
+	distances *TimesMappedDistancesMatrix
+	durations *TimesMappedDurationsMatrix
+	pheromones *PheromonesMatrix
+	random *rand.Rand
+	resultChannel chan Result
+	
+	SetPheromones(p *PheromonesMatrix)
+	BestPath() *Path
+	FindFood(boost int)
+	FindFoodIterations(iterations, boost int)
+	setStart()
+	init()
+	before()
+	setStep(i int, place *Place)
+	isUsed(place *Place) bool
+	generatePath()
+	pickNextPlace(i int) (*Place, error)
+	placeReachable(place *Place) (bool, error)
+	sumPriorities()	
+}
+Ant *.. Trip
+Ant *.. Place
+Ant *-- VisitTimes
+Ant *-- Path
+
+class Result {
+	path Path
+	time time.Duration
+	distance int64
+	priorities int
+	visitTimes VisitTimes
+
+	Path() Path
+	Time() time.Duration
+	Distance() int64
+	Priorities() int
+	VisitTimes() VisitTimes
+	SetVisitTimes(visitTimes VisitTimes)
+}
+Result *-- VisitTimes
+Result *-- Path
+
+class VisitTimes {
+	Arrivals map[int]time.Time
+	Departures map[int]time.Time
+}
+
+class Configuration {
+	APIKey string
+	Mode string
+	Language string
+	TripStart string
+	TripEnd string
+	TravelMode string
+	PlacesConfiguration []*PlaceConfig
+}
+Configuration *.. PlaceConfig
+
+class Trip {
+	Places []*Place
+	StartPlace *Place
+	EndPlace *Place
+	TripStart time.Time
+	TripEnd time.Time
+	TotalDistance int64
+	Steps []Step
+	Schedule string
+	TravelMode maps.Mode
+
+	CreateSchedule() string
+}
+Trip *.. Place
+Trip *-- Step
+
+class PlaceConfig {
+	Priority int
+	StayDuration int
+	Description interface{}
+	Start bool
+	End bool
+}
+PlaceConfig *-- Description
+
+class PlaceDetails {
+	PermanentlyClosed bool
+	OpeningHoursPeriods []maps.OpeningHoursPeriod
+	Location *time.Location
+	FormattedAddress string
+	Name string
+}
+
+class Place {
+	Index int
+	StayDuration int
+	Priority int
+	PlaceID string
+	Arrival time.Time
+	Departure time.Time
+	Details PlaceDetails
+
+	SetDetails(service interface{}, c *maps.Client) error
+}
+
+Place *-- PlaceDetails
+
+class Step {
+	From int
+	To int
+	Duration time.Duration
+	Distance int64
+}
+
+class Path {
+	Steps []Step
+	len int
+	loop bool
+	dummy bool
+
+	Set(i, value int)
+	SetStep(i, to int, dur time.Duration, dist int64)
+	Cut(i int)
+	At(i int) int
+	Path() []int
+}
+
+Path *-- Step
+
+interface Description {
+	MapsPlaceID(interface{}, *maps.Client) (string, error)
+}
+
+class AddressDescription {
+	Name string
+	Street string
+	Number string
+	City string
+	PostalCode string
+	Country string
+
+	IsEmpty() bool
+	toAddressString() (address string)
+}
+
+class NameDescription {
+	Name string
+}
+
+class PlaceIDDescription {
+	PlaceID string
+}
+
+Description <|-- AddressDescription
+Description <|-- NameDescription
+Description <|-- PlaceIDDescription
+
+@enduml

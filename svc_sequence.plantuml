@@ -29,7 +29,7 @@ S -> S: create Trip
 S -> S: create GoogleMapsAPI client
 note left: using Client's\nAPI key
 
-loop for each place
+loop for each place in separate ""goroutine""
  S -> S: decode Place Description
  note left: according\nto selected mode
  S -> S: GetPlaceID
@@ -46,10 +46,9 @@ loop for each place
  deactivate S
  S -> G: PlaceDetailsRequest
  S <- G: PlaceDetailsResult
+ S -> S: check for Start and End
  S -> S: set PlaceDetails
 end loop
-
-S -> S: check and set\nStartPlace and EndPlace
 
 create P
 S -> P: NewPlanner
@@ -85,7 +84,6 @@ activate T
 T -> T: EncodeTripPlanResponse
 C <- T: Trip Response
 deactivate T
-
 
 hide footbox
 
