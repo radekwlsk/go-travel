@@ -32,12 +32,6 @@
   revision = "e57e4534cf9b3b00ef6c0175f59d8d2d34f60914"
 
 [[projects]]
-  name = "github.com/google/uuid"
-  packages = ["."]
-  revision = "064e2069ce9c359c118179501254f67d7d37ba24"
-  version = "0.2"
-
-[[projects]]
   name = "github.com/gorilla/context"
   packages = ["."]
   revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
@@ -56,12 +50,6 @@
   revision = "2bcd89a1743fd4b373f7370ce8ddc14dfbd18229"
 
 [[projects]]
-  name = "github.com/kataras/iris"
-  packages = ["core/errors"]
-  revision = "aab34a3e9d37f8b9fed4124f755a1b89a6f88c8a"
-  version = "v8.5.7"
-
-[[projects]]
   branch = "master"
   name = "github.com/kr/logfmt"
   packages = ["."]
@@ -69,27 +57,9 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/kr/pretty"
-  packages = ["."]
-  revision = "cfb55aafdaf3ec08f0db22699ab822c50091b1c4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/kr/text"
-  packages = ["."]
-  revision = "7cafcd837844e784b526369c9bce262804aebc60"
-
-[[projects]]
-  branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "06020f85339e21b2478f756a78e295255ffa4d6a"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/satori/go.uuid"
-  packages = ["."]
-  revision = "5bf94b69c6b68ee1b541973bb8e1144db23a194b"
 
 [[projects]]
   branch = "master"
@@ -112,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "40c9aba6018f53b7a8806d92cb0fd827089c3951ad987a17d89045966cf0cf4b"
+  inputs-digest = "007b3c5b3857cc2df65dd347a24cee3c42d2192ac7ba7e6a71ba67931e52f040"
   solver-name = "gps-cdcl"
   solver-version = 1
