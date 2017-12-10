@@ -2,6 +2,7 @@ package planner
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -10,8 +11,6 @@ import (
 
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner/ants"
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
-	"github.com/kataras/iris/core/errors"
-	"github.com/kr/pretty"
 	"googlemaps.github.io/maps"
 )
 
@@ -40,17 +39,17 @@ func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 	var pheromones *ants.PheromonesMatrix
 	var pherMutex = sync.Mutex{}
 	var resultChannel = make(chan ants.Result)
+	var swarm []*ants.Ant
 
 	length = len(planner.trip.Places)
 
-	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
-	var swarm = make([]*ants.Ant, Ants)
-
 	durations, distances, err = planner.durationsAndDistances()
-
 	if err != nil {
 		return nil, err
 	}
+
+	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
+	swarm = make([]*ants.Ant, Ants)
 
 	pheromones = ants.NewPheromonesMatrix(length, float64(Boost), pherMutex)
 
@@ -64,13 +63,13 @@ func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 		//	pheromones = NewPheromonesMatrix(length, float64(Boost), pherMutex)
 		//}
 		for i := 0; i < Ants; i++ {
-			go swarm[i].FindFood(Boost)
+			go swarm[i].FindFood()
 		}
 		for i := 0; i < Ants; i++ {
 			result := <-resultChannel
 			if result.Priorities() > bestResult.Priorities() ||
 				(result.Priorities() == bestResult.Priorities() && result.Time() < bestResult.Time()) {
-				pretty.Printf(
+				fmt.Printf(
 					"better result! time: %.2f minutes, priorities: %d\n",
 					float64(result.Time()/time.Minute),
 					result.Priorities(),

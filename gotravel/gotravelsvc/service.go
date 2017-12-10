@@ -189,6 +189,14 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 				Priority:     place.Priority,
 				PlaceID:      placeID,
 			}
+			if t.Places[i].Priority > 10 {
+				t.Places[i].Priority = 10
+			} else if t.Places[i].Priority < 0 {
+				t.Places[i].Priority = 0
+			}
+			if t.Places[i].StayDuration < 0 {
+				t.Places[i].StayDuration = 0
+			}
 			if place.Start {
 				if t.StartPlace != nil {
 					errChan <- ErrTwoStartPlaces
@@ -227,6 +235,8 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 	}
 
 	t.Schedule = t.CreateSchedule()
+
+	fmt.Println(t.Schedule)
 
 	return t, nil
 }

@@ -56,7 +56,12 @@ func (t *Trip) CreateSchedule() string {
 	var sStrings = make([]string, len(t.Steps))
 
 	for i, s := range t.Steps {
-		sStrings[i] = fmt.Sprintf("[%s - %s] %s", aStrings[s.From], dStrings[s.From], t.Places[s.From].Details.Name)
+		sStrings[i] = fmt.Sprintf(
+			"[%s - %s] %s, %s",
+			aStrings[s.From],
+			dStrings[s.From],
+			t.Places[s.From].Details.Name,
+			t.Places[s.From].Details.FormattedAddress)
 	}
 
 	if t.EndPlace != t.StartPlace {
@@ -66,16 +71,14 @@ func (t *Trip) CreateSchedule() string {
 			aStrings[last],
 			dStrings[last],
 			t.Places[last].Details.Name,
-			t.Places[last].Details.FormattedAddress,
-		))
+			t.Places[last].Details.FormattedAddress))
 
 	} else {
 		sStrings = append(sStrings, fmt.Sprintf(
 			"[%s] %s, %s",
 			t.TripEnd.Format("15:04"),
 			t.Places[t.EndPlace.Index].Details.Name,
-			t.Places[t.EndPlace.Index].Details.FormattedAddress,
-		))
+			t.Places[t.EndPlace.Index].Details.FormattedAddress))
 	}
 	return strings.Join(sStrings, "\n")
 }
