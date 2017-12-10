@@ -1,17 +1,17 @@
 {
-  "apiKey": "AIzaSyB5vZbBb8b9fH2empHRskJrKu4TZXW6blM",
+  "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
   "mode": "name",
   "tripStart": "2018-01-08T11:00:00+01:00",
   "tripEnd": "2018-01-08T17:30:00+01:00",
-  "travelMode": "bicycling",
+  "travelMode": "walking",
+  "language": "pl",
   "places": [
     {
       "description": {
         "name": "Muzeum Narodowe we Wrocławiu"
       },
       "priority": 8,
-      "stayDuration": 70,
-      "start": true
+      "stayDuration": 70
     },
     {
       "description": {
@@ -39,7 +39,8 @@
         "name": "Punkt widokowy Sky Tower"
       },
       "priority": 6,
-      "stayDuration": 40
+      "stayDuration": 40,
+      "end": true
     },
     {
       "description": {

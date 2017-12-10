@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner/types"
-	traveltypes "github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner/ants"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 	"github.com/kataras/iris/core/errors"
 	"github.com/kr/pretty"
 	"googlemaps.github.io/maps"
@@ -22,31 +22,29 @@ var (
 )
 
 type Planner struct {
-	client    *maps.Client
-	trip      *traveltypes.Trip
-	times     *types.TimesMappedDurationsMatrix
-	distances *types.TimesMappedDistancesMatrix
+	client *maps.Client
+	trip   *trip.Trip
 }
 
-func NewPlanner(c *maps.Client, t *traveltypes.Trip) *Planner {
+func NewPlanner(c *maps.Client, t *trip.Trip) *Planner {
 	return &Planner{
 		client: c,
 		trip:   t,
 	}
 }
 
-func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
+func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 	var length int
-	var durations *types.TimesMappedDurationsMatrix
-	var distances *types.TimesMappedDistancesMatrix
-	var pheromones *types.PheromonesMatrix
+	var durations *ants.TimesMappedDurationsMatrix
+	var distances *ants.TimesMappedDistancesMatrix
+	var pheromones *ants.PheromonesMatrix
 	var pherMutex = sync.Mutex{}
-	var resultChannel = make(chan types.Result)
+	var resultChannel = make(chan ants.Result)
 
 	length = len(planner.trip.Places)
 
 	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
-	var ants = make([]*Ant, Ants)
+	var swarm = make([]*ants.Ant, Ants)
 
 	durations, distances, err = planner.durationsAndDistances()
 
@@ -54,19 +52,19 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 		return nil, err
 	}
 
-	pheromones = types.NewPheromonesMatrix(length, float64(Boost), pherMutex)
+	pheromones = ants.NewPheromonesMatrix(length, float64(Boost), pherMutex)
 
-	var bestResult = types.NewEmptyResult()
+	var bestResult = ants.NewEmptyResult()
 
 	for i := 0; i < Ants; i++ {
-		ants[i] = NewAnt(planner.trip, distances, durations, pheromones, resultChannel)
+		swarm[i] = ants.NewAnt(planner.trip, distances, durations, pheromones, resultChannel)
 	}
 	for i := 0; i < Iterations; i++ {
 		//if i%int(float64(Iterations)/10.0) == 0 {
 		//	pheromones = NewPheromonesMatrix(length, float64(Boost), pherMutex)
 		//}
 		for i := 0; i < Ants; i++ {
-			go ants[i].FindFood(Boost)
+			go swarm[i].FindFood(Boost)
 		}
 		for i := 0; i < Ants; i++ {
 			result := <-resultChannel
@@ -83,6 +81,7 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 		}
 		pheromones.Evaporate(Boost, Iterations)
 	}
+	close(resultChannel)
 
 	for _, place := range planner.trip.Places {
 		place.Arrival = bestResult.VisitTimes().Arrivals[place.Index]
@@ -91,12 +90,21 @@ func (planner *Planner) Evaluate() (steps []traveltypes.Step, err error) {
 	planner.trip.TripEnd = planner.trip.TripStart.Add(bestResult.Time())
 	planner.trip.TotalDistance = bestResult.Distance()
 
+	path := bestResult.Path()
+
+	if planner.trip.StartPlace == nil {
+		planner.trip.StartPlace = planner.trip.Places[path.At(0)]
+	}
+	if planner.trip.EndPlace == nil {
+		planner.trip.EndPlace = planner.trip.Places[path.At(path.Size()-1)]
+	}
+
 	return bestResult.Path().Steps, err
 }
 
 func (planner *Planner) durationsAndDistances() (
-	durations *types.TimesMappedDurationsMatrix,
-	distances *types.TimesMappedDistancesMatrix,
+	durations *ants.TimesMappedDurationsMatrix,
+	distances *ants.TimesMappedDistancesMatrix,
 	err error,
 ) {
 	length := len(planner.trip.Places)
@@ -107,8 +115,8 @@ func (planner *Planner) durationsAndDistances() (
 		checkedTimes = append(checkedTimes, currentTime)
 		currentTime = currentTime.Add(timeDelta)
 	}
-	durations = types.NewTravelTimeMatrix(length, checkedTimes)
-	distances = types.NewDistanceMatrix(length, checkedTimes)
+	durations = ants.NewTravelTimeMatrix(length, checkedTimes)
+	distances = ants.NewDistanceMatrix(length, checkedTimes)
 	destinationAddresses := make([]string, length)
 	originAddresses := make([]string, length)
 	for _, place := range planner.trip.Places {

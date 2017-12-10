@@ -1,17 +1,17 @@
-package types
+package trip
 
 import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/afrometal/go-travel/utils"
-	"github.com/google/uuid"
 	"googlemaps.github.io/maps"
 )
 
-type Place struct {
+type PlaceConfig struct {
 	Priority     int         `json:"priority,omitempty"`
 	StayDuration int         `json:"stayDuration,omitempty"`
 	Description  interface{} `json:"description"`
@@ -33,24 +33,61 @@ var ModeOptions = []string{
 }
 
 type Trip struct {
-	ClientID      uuid.UUID    `json:"clientId"`
-	Places        []*TripPlace `json:"places"`
-	StartPlace    *TripPlace   `json:"-"`
-	EndPlace      *TripPlace   `json:"-"`
-	TripStart     time.Time    `json:"tripStart"`
-	TripEnd       time.Time    `json:"tripEnd"`
-	TotalDistance int64        `json:"totalDistance"`
-	Steps         []Step       `json:"steps"`
-	TravelMode    maps.Mode    `json:"travelMode"`
+	Places        []*Place  `json:"places"`
+	StartPlace    *Place    `json:"-"`
+	EndPlace      *Place    `json:"-"`
+	TripStart     time.Time `json:"tripStart"`
+	TripEnd       time.Time `json:"tripEnd"`
+	TotalDistance int64     `json:"totalDistance"`
+	Steps         []Step    `json:"steps"`
+	Schedule      string    `json:"schedule"`
+	TravelMode    maps.Mode `json:"travelMode"`
 }
 
-type TripConfiguration struct {
-	APIKey     string   `json:"apiKey"`
-	Mode       string   `json:"mode"`
-	TripStart  string   `json:"tripStart"`
-	TripEnd    string   `json:"tripEnd"`
-	TravelMode string   `json:"travelMode,omitempty"`
-	Places     []*Place `json:"places"`
+func (t *Trip) CreateSchedule() string {
+	var dStrings = make([]string, len(t.Places))
+	var aStrings = make([]string, len(t.Places))
+
+	for i, p := range t.Places {
+		dStrings[i] = p.Departure.Format("15:04")
+		aStrings[i] = p.Arrival.Format("15:04")
+	}
+
+	var sStrings = make([]string, len(t.Steps))
+
+	for i, s := range t.Steps {
+		sStrings[i] = fmt.Sprintf("[%s - %s] %s", aStrings[s.From], dStrings[s.From], t.Places[s.From].Details.Name)
+	}
+
+	if t.EndPlace != t.StartPlace {
+		last := t.Steps[len(t.Steps)-1].To
+		sStrings = append(sStrings, fmt.Sprintf(
+			"[%s - %s] %s, %s",
+			aStrings[last],
+			dStrings[last],
+			t.Places[last].Details.Name,
+			t.Places[last].Details.FormattedAddress,
+		))
+
+	} else {
+		sStrings = append(sStrings, fmt.Sprintf(
+			"[%s] %s, %s",
+			t.TripEnd.Format("15:04"),
+			t.Places[t.EndPlace.Index].Details.Name,
+			t.Places[t.EndPlace.Index].Details.FormattedAddress,
+		))
+	}
+	return strings.Join(sStrings, "\n")
+}
+
+type Configuration struct {
+	APIKey              string         `json:"apiKey"`
+	Mode                string         `json:"mode"`
+	Language            string         `json:"language"`
+	TripStart           string         `json:"tripStart"`
+	TripEnd             string         `json:"tripEnd"`
+	TravelMode          string         `json:"travelMode,omitempty"`
+	PlacesConfiguration []*PlaceConfig `json:"places"`
 }
 
 type PlaceDetails struct {
@@ -58,20 +95,23 @@ type PlaceDetails struct {
 	OpeningHoursPeriods []maps.OpeningHoursPeriod `json:"openingHours"`
 	Location            *time.Location            `json:"-"`
 	FormattedAddress    string                    `json:"formattedAddress"`
+	Name                string                    `json:"name"`
 }
 
-type TripPlace struct {
-	Index     int          `json:"id"`
-	Place     *Place       `json:"place"`
-	PlaceID   string       `json:"placeId"`
-	Arrival   time.Time    `json:"arrival,omitempty"`
-	Departure time.Time    `json:"departure,omitempty"`
-	Details   PlaceDetails `json:"details,omitempty"`
+type Place struct {
+	Index        int          `json:"id"`
+	StayDuration int          `json:"stayDuration"`
+	Priority     int          `json:"priority"`
+	PlaceID      string       `json:"-"`
+	Arrival      time.Time    `json:"arrival,omitempty"`
+	Departure    time.Time    `json:"departure,omitempty"`
+	Details      PlaceDetails `json:"details,omitempty"`
 }
 
-func (tp *TripPlace) SetDetails(service interface{}, c *maps.Client) error {
+func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) error {
 	r := &maps.PlaceDetailsRequest{
-		PlaceID: tp.PlaceID,
+		PlaceID:  p.PlaceID,
+		Language: lang,
 	}
 	var resp maps.PlaceDetailsResult
 	resp, err := c.PlaceDetails(context.Background(), r)
@@ -84,11 +124,12 @@ func (tp *TripPlace) SetDetails(service interface{}, c *maps.Client) error {
 		name := strconv.Itoa(resp.UTCOffset / 60)
 		location = time.FixedZone(name, offset)
 	}
-	tp.Details = PlaceDetails{
+	p.Details = PlaceDetails{
 		PermanentlyClosed:   resp.PermanentlyClosed,
 		OpeningHoursPeriods: resp.OpeningHours.Periods,
 		Location:            location,
 		FormattedAddress:    resp.FormattedAddress,
+		Name:                resp.Name,
 	}
 	return nil
 }
@@ -127,7 +168,9 @@ func (p *Path) SetStep(i, to int, dur time.Duration, dist int64) {
 	if i < 1 {
 		panic("tried to set step to first place")
 	}
-	p.Set(i, to)
+	if to != p.path[0] {
+		p.Set(i, to)
+	}
 	from := p.At(i - 1)
 	p.Steps = append(p.Steps, Step{
 		From:     from,
@@ -137,21 +180,8 @@ func (p *Path) SetStep(i, to int, dur time.Duration, dist int64) {
 	})
 }
 
-func (p *Path) PathIndexes() []int {
-	if p.loop {
-		return append(p.path, p.path[0])
-	} else {
-		return p.path
-	}
-}
-
 func (p *Path) Cut(i int) {
 	p.path = p.path[:i]
-	p.len = len(p.path)
-}
-
-func (p *Path) Append(value int) {
-	p.path = append(p.path, value)
 	p.len = len(p.path)
 }
 
@@ -171,7 +201,7 @@ func (p *Path) Path() []int {
 }
 
 type Description interface {
-	GetPlaceID(interface{}, *maps.Client) (string, error)
+	MapsPlaceID(interface{}, *maps.Client) (string, error)
 }
 
 type AddressDescription struct {
@@ -205,7 +235,7 @@ func (ad *AddressDescription) toAddressString() (address string) {
 	return
 }
 
-func (ad *AddressDescription) GetPlaceID(service interface{}, c *maps.Client) (string, error) {
+func (ad *AddressDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	var placeId string
 	{
 		r := &maps.GeocodingRequest{
@@ -226,7 +256,7 @@ type NameDescription struct {
 	Name string `json:"name"`
 }
 
-func (nd *NameDescription) GetPlaceID(service interface{}, c *maps.Client) (string, error) {
+func (nd *NameDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	var placeId string
 	{
 		r := &maps.TextSearchRequest{
@@ -247,6 +277,6 @@ type PlaceIDDescription struct {
 	PlaceID string `json:"place_id"`
 }
 
-func (pid *PlaceIDDescription) GetPlaceID(service interface{}, c *maps.Client) (string, error) {
+func (pid *PlaceIDDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	return pid.PlaceID, nil
 }

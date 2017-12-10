@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 	"github.com/go-kit/kit/log"
 )
 
@@ -20,12 +20,11 @@ func NewLoggingMiddleware(s Service, logger log.Logger) Service {
 	return loggingMiddleware{logger, s}
 }
 
-func (mw loggingMiddleware) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
+func (mw loggingMiddleware) TripPlan(ctx context.Context, tc trip.Configuration) (trip trip.Trip, err error) {
 	defer func(begin time.Time) {
 		mw.logger.Log(
 			"method", "TripPlan",
 			"apiKey", tc.APIKey,
-			"clientID", trip.ClientID,
 			"err", err,
 			"took", time.Since(begin),
 		)

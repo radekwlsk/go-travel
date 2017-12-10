@@ -1,21 +1,21 @@
-package types
+package ants
 
 import (
 	"math"
 	"time"
 
-	traveltypes "github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 )
 
 type Result struct {
-	path       traveltypes.Path
+	path       trip.Path
 	time       time.Duration
 	distance   int64
 	priorities int
 	visitTimes VisitTimes
 }
 
-func NewResult(path traveltypes.Path, dur time.Duration, dist int64, prio int, times VisitTimes) Result {
+func NewResult(path trip.Path, dur time.Duration, dist int64, prio int, times VisitTimes) Result {
 	return Result{
 		path:       path,
 		time:       dur,
@@ -27,7 +27,7 @@ func NewResult(path traveltypes.Path, dur time.Duration, dist int64, prio int, t
 
 func NewEmptyResult() Result {
 	return Result{
-		path:       traveltypes.NewDummyPath(),
+		path:       trip.NewDummyPath(),
 		time:       time.Duration(math.MaxInt64),
 		distance:   math.MaxInt64,
 		priorities: 0,
@@ -35,7 +35,7 @@ func NewEmptyResult() Result {
 	}
 }
 
-func (r *Result) Path() traveltypes.Path {
+func (r *Result) Path() trip.Path {
 	return r.path
 }
 

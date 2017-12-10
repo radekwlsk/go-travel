@@ -9,9 +9,8 @@ import (
 	"time"
 
 	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 	"github.com/afrometal/go-travel/utils"
-	"github.com/google/uuid"
 	"github.com/gregjones/httpcache"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
@@ -20,7 +19,7 @@ import (
 // Service interface definition and basic service methods implementation,
 // the actual actions performed by service on data.
 type Service interface {
-	TripPlan(context.Context, types.TripConfiguration) (types.Trip, error)
+	TripPlan(context.Context, trip.Configuration) (trip.Trip, error)
 }
 
 var (
@@ -49,11 +48,11 @@ var (
 	ErrTwoEndPlaces = errors.New("more than one place marked as end")
 
 	ErrBadMode = errors.New(fmt.Sprintf("place description mode is not valid, available modes are: %s",
-		strings.Join(types.ModeOptions, ", ")))
+		strings.Join(trip.ModeOptions, ", ")))
 
 	ErrBadTravelMode = errors.New(fmt.Sprintf(
 		"travelMode is not a valid, available modes are: %s",
-		strings.Join(types.TravelModeOptions, ", ")))
+		strings.Join(trip.TravelModeOptions, ", ")))
 )
 
 type service struct {
@@ -66,83 +65,82 @@ func NewService() Service {
 	}
 }
 
-func (s *service) TripPlan(ctx context.Context, tc types.TripConfiguration) (trip types.Trip, err error) {
+func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.Trip, err error) {
 
 	if tc.APIKey == "" {
-		return types.Trip{}, ErrAPIKeyEmpty
+		return trip.Trip{}, ErrAPIKeyEmpty
 	}
 
 	if tc.Mode == "" {
-		return types.Trip{}, ErrModeEmpty
-	} else if !utils.StringIn(tc.Mode, types.ModeOptions) {
-		return types.Trip{}, ErrBadMode
+		return trip.Trip{}, ErrModeEmpty
+	} else if !utils.StringIn(tc.Mode, trip.ModeOptions) {
+		return trip.Trip{}, ErrBadMode
 	}
 
 	if tc.TravelMode == "" {
-		tc.TravelMode = types.TravelModeOptions[0]
-	} else if !utils.StringIn(tc.TravelMode, types.TravelModeOptions) {
-		return types.Trip{}, ErrBadTravelMode
+		tc.TravelMode = trip.TravelModeOptions[0]
+	} else if !utils.StringIn(tc.TravelMode, trip.TravelModeOptions) {
+		return trip.Trip{}, ErrBadTravelMode
 	}
 
 	var ts, te time.Time
 	var now = time.Now()
 
 	if tc.TripStart == "" {
-		return types.Trip{}, ErrTripStartEmpty
+		return trip.Trip{}, ErrTripStartEmpty
 	} else if ts, err = time.Parse(time.RFC3339, tc.TripStart); err != nil {
-		return types.Trip{}, ErrBadTimeFormat
+		return trip.Trip{}, ErrBadTimeFormat
 	} else if ts.Before(now) {
-		return types.Trip{}, ErrBadTime
+		return trip.Trip{}, ErrBadTime
 	}
 
 	if tc.TripEnd == "" {
-		return types.Trip{}, ErrTripEndEmpty
+		return trip.Trip{}, ErrTripEndEmpty
 	} else if te, err = time.Parse(time.RFC3339, tc.TripEnd); err != nil {
-		return types.Trip{}, ErrBadTimeFormat
+		return trip.Trip{}, ErrBadTimeFormat
 	} else if te.Before(now) {
-		return types.Trip{}, ErrBadTime
+		return trip.Trip{}, ErrBadTime
 	}
 
 	if te.Before(ts) {
-		return types.Trip{}, ErrEndBeforeStart
+		return trip.Trip{}, ErrEndBeforeStart
 	}
 
 	var pLen int
 
-	if pLen = len(tc.Places); pLen < 2 {
-		return types.Trip{}, ErrNotEnoughPlaces
+	if pLen = len(tc.PlacesConfiguration); pLen < 2 {
+		return trip.Trip{}, ErrNotEnoughPlaces
 	}
 
-	trip = types.Trip{
-		Places:     make([]*types.TripPlace, pLen),
-		ClientID:   uuid.New(),
+	t = trip.Trip{
+		Places:     make([]*trip.Place, pLen),
 		TripStart:  ts,
 		TripEnd:    te,
 		TravelMode: maps.Mode(tc.TravelMode),
 	}
 
-	client, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(s.cacheTransport.Client()))
+	c, err := maps.NewClient(maps.WithAPIKey(tc.APIKey), maps.WithHTTPClient(s.cacheTransport.Client()))
 
 	if err != nil {
 		println("error 1")
-		return trip, err
+		return t, err
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(len(tc.Places))
-	errChan := make(chan error, len(tc.Places))
-	for i, p := range tc.Places {
-		go func(i int, place *types.Place) {
+	wg.Add(len(tc.PlacesConfiguration))
+	errChan := make(chan error, len(tc.PlacesConfiguration))
+	for i, p := range tc.PlacesConfiguration {
+		go func(i int, place *trip.PlaceConfig) {
 			defer wg.Done()
 			config := mapstructure.DecoderConfig{ErrorUnused: true}
 			var placeID string
 			switch tc.Mode {
 			case "address":
-				config.Result = &types.AddressDescription{}
+				config.Result = &trip.AddressDescription{}
 			case "name":
-				config.Result = &types.NameDescription{}
+				config.Result = &trip.NameDescription{}
 			case "id":
-				config.Result = &types.PlaceIDDescription{}
+				config.Result = &trip.PlaceIDDescription{}
 			default:
 				errChan <- ErrBadMode
 				return
@@ -157,7 +155,7 @@ func (s *service) TripPlan(ctx context.Context, tc types.TripConfiguration) (tri
 				errChan <- ErrBadDescription
 				return
 			}
-			if _, ok := config.Result.(types.Description); ok {
+			if _, ok := config.Result.(trip.Description); ok {
 				place.Description = config.Result
 			} else {
 				errChan <- ErrBadDescription
@@ -165,28 +163,47 @@ func (s *service) TripPlan(ctx context.Context, tc types.TripConfiguration) (tri
 			}
 			switch tc.Mode {
 			case "address":
-				if place.Description.(*types.AddressDescription).IsEmpty() {
+				if place.Description.(*trip.AddressDescription).IsEmpty() {
 					errChan <- ErrBadDescription
 					return
 				}
 			case "name":
-				if place.Description.(*types.NameDescription).Name == "" {
+				if place.Description.(*trip.NameDescription).Name == "" {
 					errChan <- ErrBadDescription
 					return
 				}
 			case "id":
-				if place.Description.(*types.PlaceIDDescription).PlaceID == "" {
+				if place.Description.(*trip.PlaceIDDescription).PlaceID == "" {
 					errChan <- ErrBadDescription
 					return
 				}
 			}
-			placeID, err = place.Description.(types.Description).GetPlaceID(s, client)
+			placeID, err = place.Description.(trip.Description).MapsPlaceID(s, c)
 			if err != nil {
 				errChan <- err
 				return
 			}
-			trip.Places[i] = &types.TripPlace{Index: i, Place: place, PlaceID: placeID}
-			err = trip.Places[i].SetDetails(s, client)
+			t.Places[i] = &trip.Place{
+				Index:        i,
+				StayDuration: place.StayDuration,
+				Priority:     place.Priority,
+				PlaceID:      placeID,
+			}
+			if place.Start {
+				if t.StartPlace != nil {
+					errChan <- ErrTwoStartPlaces
+					return
+				}
+				t.StartPlace = t.Places[i]
+			}
+			if place.End {
+				if t.EndPlace != nil {
+					errChan <- ErrTwoEndPlaces
+					return
+				}
+				t.EndPlace = t.Places[i]
+			}
+			err = t.Places[i].SetDetails(s, c, tc.Language)
 			if err != nil {
 				errChan <- err
 				return
@@ -198,37 +215,18 @@ func (s *service) TripPlan(ctx context.Context, tc types.TripConfiguration) (tri
 	close(errChan)
 	for err := range errChan {
 		if err != nil {
-			return trip, err
+			return t, err
 		}
 	}
 
-	var start, end bool
-
-	for _, p := range trip.Places {
-		if p.Place.Start {
-			if start {
-				return trip, ErrTwoEndPlaces
-			} else {
-				start = true
-				trip.StartPlace = p
-			}
-		}
-		if p.Place.End {
-			if end {
-				return trip, ErrTwoEndPlaces
-			} else {
-				end = true
-				trip.EndPlace = p
-			}
-		}
-	}
-
-	p := planner.NewPlanner(client, &trip)
-	trip.Steps, err = p.Evaluate()
+	p := planner.NewPlanner(c, &t)
+	t.Steps, err = p.Evaluate()
 
 	if err != nil {
-		return trip, err
+		return t, err
 	}
 
-	return trip, nil
+	t.Schedule = t.CreateSchedule()
+
+	return t, nil
 }

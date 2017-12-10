@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
@@ -42,11 +42,11 @@ func MakeClientEndpoints(instance string) (Endpoints, error) {
 	}, nil
 }
 
-func (e Endpoints) TripPlan(ctx context.Context, tc types.TripConfiguration) (types.Trip, error) {
+func (e Endpoints) TripPlan(ctx context.Context, tc trip.Configuration) (trip.Trip, error) {
 	request := tripPlanRequest{TripConfiguration: tc}
 	response, err := e.TripPlanEndpoint(ctx, request)
 	if err != nil {
-		return types.Trip{}, err
+		return trip.Trip{}, err
 	}
 	resp := response.(tripPlanResponse)
 	return resp.Response, resp.Err
@@ -61,12 +61,12 @@ func MakeTripPlanEndpoint(s Service) endpoint.Endpoint {
 }
 
 type tripPlanRequest struct {
-	TripConfiguration types.TripConfiguration
+	TripConfiguration trip.Configuration
 }
 
 type tripPlanResponse struct {
-	Response types.Trip `json:"resp,omitempty"`
-	Err      error      `json:"err,omitempty"`
+	Response trip.Trip `json:"resp,omitempty"`
+	Err      error     `json:"err,omitempty"`
 }
 
 func (r tripPlanResponse) error() error { return r.Err }

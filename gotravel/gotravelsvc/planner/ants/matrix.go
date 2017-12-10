@@ -1,11 +1,11 @@
-package types
+package ants
 
 import (
 	"math"
 	"sync"
 	"time"
 
-	traveltypes "github.com/afrometal/go-travel/gotravel/gotravelsvc/types"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -34,7 +34,7 @@ func (p *PheromonesMatrix) AddAt(i, j int, value float64) {
 	p.Set(i, j, p.At(i, j)+value)
 }
 
-func (p *PheromonesMatrix) IntensifyAlong(path traveltypes.Path, boost int) {
+func (p *PheromonesMatrix) IntensifyAlong(path trip.Path, boost int) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	for _, step := range path.Steps {
