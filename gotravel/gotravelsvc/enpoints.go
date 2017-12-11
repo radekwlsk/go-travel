@@ -49,14 +49,14 @@ func (e Endpoints) TripPlan(ctx context.Context, tc trip.Configuration) (trip.Tr
 		return trip.Trip{}, err
 	}
 	resp := response.(tripPlanResponse)
-	return resp.Response, resp.Err
+	return resp.Trip, resp.Err
 }
 
 func MakeTripPlanEndpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(tripPlanRequest)
 		resp, e := s.TripPlan(ctx, req.TripConfiguration)
-		return tripPlanResponse{Response: resp, Err: e}, nil
+		return tripPlanResponse{Trip: resp, Err: e}, nil
 	}
 }
 
@@ -65,8 +65,8 @@ type tripPlanRequest struct {
 }
 
 type tripPlanResponse struct {
-	Response trip.Trip `json:"resp,omitempty"`
-	Err      error     `json:"err,omitempty"`
+	trip.Trip
+	Err error `json:"err,omitempty"`
 }
 
 func (r tripPlanResponse) error() error { return r.Err }

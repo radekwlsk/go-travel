@@ -178,7 +178,7 @@ func (p *Path) SetStep(i, to int, dur time.Duration, dist int64) {
 	p.Steps = append(p.Steps, Step{
 		From:     from,
 		To:       to,
-		Duration: dur,
+		Duration: dur / time.Minute,
 		Distance: dist,
 	})
 }

@@ -226,6 +226,8 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 			return t, err
 		}
 	}
+	
+	// TODO: check for earliest opening and move start time if necessary
 
 	p := planner.NewPlanner(c, &t)
 	t.Steps, err = p.Evaluate()
