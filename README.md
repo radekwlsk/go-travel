@@ -11,19 +11,15 @@ Requests can be made in four modes:
 {
   "apiKey" : string,
   "mode": ["address"|"name"|"id"],
-  "tripStart": string "YYYY-MM-DDThh:mm:ssZ",
-  "tripEnd": string "YYYY-MM-DDThh:mm:ssZ",
-  "travelModes": {
-    "driving": [true|false],
-    "walking": [true|false],
-    "transit": [true|false],
-    "bicycling": [true|false]
-  },
+  "tripStart": string ("YYYY-MM-DDThh:mm:ssZ"),
+  "tripEnd": string ("YYYY-MM-DDThh:mm:ssZ"),
+  "language": string (2 letter code),
+  "travelMode": ["driving", "walking", "transit", "bicycling"],
   "places": [
     {
       "description": {},
-      "priority": int 1-10,
-      "stayDuration": int minutes
+      "priority": int (0-10),
+      "stayDuration": int (minutes)
     }
   ]
 }
@@ -74,3 +70,51 @@ curl -s -H "Content-Type: application/json" -d @request.json http://localhost:80
 ```
 
 # RESPONSE
+
+```
+{
+  "schedule" : string,
+  "totalDistance" : int (meters),
+  "steps" : [
+     {
+        "distance" : int (meters),
+        "time" : int (minutes),
+        "from" : int,
+        "to" : int
+     },
+     ...
+  ],
+  "tripStart" : string ("YYYY-MM-DDThh:mm:ssZ"),
+  "places" : [
+     {
+        "priority" : int (0-10),
+        "details" : {
+           "openingHours" : [
+              {
+                 "open" : {
+                    "day" : int (0-6),
+                    "time" : string ("hhmm")
+                 },
+                 "close" : {
+                    "day" : int (0-6),
+                    "time" : string ("hhmm")
+                 },
+                 ...
+              },
+              ...
+           ],
+           "name" : string,
+           "formattedAddress" : string,
+           "closed" : bool
+        },
+        "arrival" : string ("YYYY-MM-DDThh:mm:ssZ"),
+        "departure" : string ("YYYY-MM-DDThh:mm:ssZ"),
+        "id" : int,
+        "stayDuration" : int (minutes)
+     },
+     ...
+  ],
+  "tripEnd" : string ("YYYY-MM-DDThh:mm:ssZ"),
+  "travelMode" : ["driving", "walking", "transit", "bicycling"]
+}
+```
