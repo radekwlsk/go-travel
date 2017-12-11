@@ -64,7 +64,7 @@ func (t *Trip) CreateSchedule() string {
 			t.Places[s.From].Details.FormattedAddress)
 	}
 
-	if t.EndPlace != t.StartPlace {
+	if t.StartPlace != nil && t.EndPlace != t.StartPlace {
 		last := t.Steps[len(t.Steps)-1].To
 		sStrings = append(sStrings, fmt.Sprintf(
 			"[%s - %s] %s, %s",
@@ -73,7 +73,7 @@ func (t *Trip) CreateSchedule() string {
 			t.Places[last].Details.Name,
 			t.Places[last].Details.FormattedAddress))
 
-	} else {
+	} else if t.EndPlace != nil {
 		sStrings = append(sStrings, fmt.Sprintf(
 			"[%s] %s, %s",
 			t.TripEnd.Format("15:04"),

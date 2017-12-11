@@ -91,11 +91,13 @@ func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 
 	path := bestResult.Path()
 
-	if planner.trip.StartPlace == nil {
-		planner.trip.StartPlace = planner.trip.Places[path.At(0)]
-	}
-	if planner.trip.EndPlace == nil {
-		planner.trip.EndPlace = planner.trip.Places[path.At(path.Size()-1)]
+	if path.Size() > 0 {
+		if planner.trip.StartPlace == nil {
+			planner.trip.StartPlace = planner.trip.Places[path.At(0)]
+		}
+		if planner.trip.EndPlace == nil {
+			planner.trip.EndPlace = planner.trip.Places[path.At(path.Size()-1)]
+		}
 	}
 
 	return bestResult.Path().Steps, err

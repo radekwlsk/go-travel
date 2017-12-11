@@ -273,8 +273,7 @@ func (a *Ant) placeReachable(place *trip.Place) (ok bool, err error) {
 }
 
 func (a *Ant) sumPriorities() (sum int) {
-
-	for i := range a.path.Path() {
+	for _, i := range a.path.Path() {
 		sum += a.trip.Places[i].Priority
 	}
 	return
