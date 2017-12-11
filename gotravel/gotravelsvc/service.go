@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -226,8 +227,34 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 			return t, err
 		}
 	}
-	
-	// TODO: check for earliest opening and move start time if necessary
+
+	{
+		tswd := t.TripStart.Weekday()
+		h, m, _ := t.TripStart.Clock()
+		fh, fm := 23, 59
+
+		for _, p := range t.Places {
+			var o string
+			for _, op := range p.Details.OpeningHoursPeriods {
+				if op.Open.Day == tswd {
+					o = op.Open.Time
+					break
+				}
+			}
+			if o != "" {
+				oh, _ := strconv.Atoi(o[:2])
+				om, _ := strconv.Atoi(o[2:])
+				if oh < fh || om < fm {
+					fh, fm = oh, om
+				}
+			}
+		}
+
+		if fh > h {
+			t.TripStart = t.TripStart.Add(time.Duration(fh-h) * time.Hour)
+			t.TripStart = t.TripStart.Add(time.Duration(fm-m) * time.Minute)
+		}
+	}
 
 	p := planner.NewPlanner(c, &t)
 	t.Steps, err = p.Evaluate()

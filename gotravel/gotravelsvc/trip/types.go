@@ -49,8 +49,12 @@ func (t *Trip) CreateSchedule() string {
 	var aStrings = make([]string, len(t.Places))
 
 	for i, p := range t.Places {
-		dStrings[i] = p.Departure.Format("15:04")
-		aStrings[i] = p.Arrival.Format("15:04")
+		aStrings[i] = p.Arrival.Format("Mon Jan 2, 15:04")
+		if p.Departure.Day() != p.Arrival.Day() {
+			dStrings[i] = p.Departure.Format("Mon Jan 2, 15:04")
+		} else {
+			dStrings[i] = p.Departure.Format("15:04")
+		}
 	}
 
 	var sStrings = make([]string, len(t.Steps))
@@ -76,7 +80,7 @@ func (t *Trip) CreateSchedule() string {
 	} else if t.EndPlace != nil {
 		sStrings = append(sStrings, fmt.Sprintf(
 			"[%s] %s, %s",
-			t.TripEnd.Format("15:04"),
+			t.TripEnd.Format("Mon Jan 2, 15:04"),
 			t.Places[t.EndPlace.Index].Details.Name,
 			t.Places[t.EndPlace.Index].Details.FormattedAddress))
 	}
@@ -127,9 +131,14 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 		name := strconv.Itoa(resp.UTCOffset / 60)
 		location = time.FixedZone(name, offset)
 	}
+	var openingHours = make([]maps.OpeningHoursPeriod, 7)
+	for _, o := range resp.OpeningHours.Periods {
+		openingHours[o.Open.Day] = o
+	}
+
 	p.Details = PlaceDetails{
 		PermanentlyClosed:   resp.PermanentlyClosed,
-		OpeningHoursPeriods: resp.OpeningHours.Periods,
+		OpeningHoursPeriods: openingHours,
 		Location:            location,
 		FormattedAddress:    resp.FormattedAddress,
 		Name:                resp.Name,

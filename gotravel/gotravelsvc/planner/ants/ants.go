@@ -13,6 +13,7 @@ import (
 
 var (
 	ErrPlaceOpensTooLate   = errors.New("place opens too late")
+	ErrPlaceClosed         = errors.New("place closed at that day")
 	ErrPlaceClosesTooEarly = errors.New("place closes too early")
 	ErrTripEndsTooEarly    = errors.New("trip time ends before place departure")
 	ErrCantReachEndPlace   = errors.New("can't reach set end place in time")
@@ -231,12 +232,19 @@ func (a *Ant) pickNextPlace() (place *trip.Place, err error) {
 }
 
 func (a *Ant) placeReachable(place *trip.Place) (ok bool, err error) {
+	if place.Details.PermanentlyClosed {
+		return false, ErrPlaceClosed
+	}
+
 	dur := a.durations.At(a.at, place.Index, a.currentTime)
 	var arvl, dprt, opn, cls time.Time
 	{
 		arvl = a.currentTime.Add(dur)
 		dprt = arvl.Add(time.Duration(place.StayDuration) * time.Minute)
 		oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
+		if oc.Open.Time == "" {
+			return false, ErrPlaceClosed
+		}
 		o := oc.Open.Time
 		y, m, d := arvl.In(place.Details.Location).Date()
 		hh, _ := strconv.Atoi(o[:2])
