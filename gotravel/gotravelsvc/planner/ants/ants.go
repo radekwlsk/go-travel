@@ -242,7 +242,7 @@ func (a *Ant) placeReachable(place *trip.Place) (ok bool, err error) {
 		arvl = a.currentTime.Add(dur)
 		dprt = arvl.Add(time.Duration(place.StayDuration) * time.Minute)
 		oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
-		if oc.Open.Time == "" {
+		if oc.Open.Time == "" || oc.Close.Time == "" {
 			return false, ErrPlaceClosed
 		}
 		o := oc.Open.Time

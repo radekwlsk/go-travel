@@ -136,6 +136,13 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 		openingHours[o.Open.Day] = o
 	}
 
+	for i, o := range openingHours {
+		if o.Open.Time == "" || o.Close.Time == "" {
+			o.Open.Day = time.Weekday(i)
+			o.Close.Day = time.Weekday(i)
+		}
+	}
+
 	p.Details = PlaceDetails{
 		PermanentlyClosed:   resp.PermanentlyClosed,
 		OpeningHoursPeriods: openingHours,
