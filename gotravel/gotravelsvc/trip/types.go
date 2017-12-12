@@ -44,10 +44,11 @@ type Trip struct {
 	TotalDistance int64     `json:"totalDistance"`
 	Steps         []Step    `json:"steps"`
 	Schedule      string    `json:"schedule"`
+	Path          []int     `json:"path"`
 	TravelMode    maps.Mode `json:"travelMode"`
 }
 
-func (t *Trip) CreateSchedule() string {
+func (t *Trip) CreateSchedule() {
 	var dStrings = make([]string, len(t.Places))
 	var aStrings = make([]string, len(t.Places))
 
@@ -87,7 +88,7 @@ func (t *Trip) CreateSchedule() string {
 			t.Places[t.EndPlace.Index].Details.Name,
 			t.Places[t.EndPlace.Index].Details.FormattedAddress))
 	}
-	return strings.Join(sStrings, "\n")
+	t.Schedule = strings.Join(sStrings, "\n")
 }
 
 type Configuration struct {
@@ -316,7 +317,7 @@ func (nd *NameDescription) String() string {
 }
 
 type PlaceIDDescription struct {
-	PlaceID string `json:"place_id"`
+	PlaceID string `json:"placeId"`
 }
 
 func (pid *PlaceIDDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {

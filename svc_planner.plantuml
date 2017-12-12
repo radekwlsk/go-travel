@@ -40,6 +40,6 @@ endwhile (yes)
 
 :update ""**trip**"" with ""**bestResult**"" data: arrival/departure times, trip end time, total distance, start/end place if not set;
 
-:return ""steps []*Step"" from ""**bestResult**"";
+:set ""**trip**"" ""steps []*Step"" and ""path []int"" from ""**bestResult**"";
 
 @enduml

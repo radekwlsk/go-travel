@@ -276,13 +276,11 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 	}
 
 	p := planner.NewPlanner(c, &t)
-	t.Steps, err = p.Evaluate()
+	err = p.Evaluate()
 
 	if err != nil {
 		return t, err
 	}
-
-	t.Schedule = t.CreateSchedule()
 
 	fmt.Println(t.Schedule)
 

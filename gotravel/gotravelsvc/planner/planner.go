@@ -32,7 +32,7 @@ func NewPlanner(c *maps.Client, t *trip.Trip) *Planner {
 	}
 }
 
-func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
+func (planner *Planner) Evaluate() (err error) {
 	var length int
 	var durations *ants.TimesMappedDurationsMatrix
 	var distances *ants.TimesMappedDistancesMatrix
@@ -45,7 +45,7 @@ func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 
 	durations, distances, err = planner.durationsAndDistances()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
@@ -100,7 +100,11 @@ func (planner *Planner) Evaluate() (steps []trip.Step, err error) {
 		}
 	}
 
-	return bestResult.Path().Steps, err
+	planner.trip.Path = path.Path()
+	planner.trip.Steps = path.Steps
+	planner.trip.CreateSchedule()
+
+	return err
 }
 
 func (planner *Planner) durationsAndDistances() (

@@ -36,8 +36,8 @@ loop for each place in separate ""goroutine""
  activate S
  alt mode "placeid"
  else mode "address"
- S -> G: GeocodingRequest
- S <- G: GeocodingResult
+ S -> G: PlaceAutocompleteRequest
+ S <- G: AutocompleteResponse
  else mode "name"
  S -> G: TextSearchRequest
  S <- G: PlacesSearchResponse
@@ -68,8 +68,8 @@ ref over P
  ACO on separate
  activity diagram
 end
-|||
-S <- P: Steps
+P <- P: Update Trip
+S <- P:
 destroy P
 E <- S: Trip
 
