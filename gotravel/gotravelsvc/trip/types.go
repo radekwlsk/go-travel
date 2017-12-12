@@ -241,7 +241,7 @@ type AddressDescription struct {
 }
 
 func (ad *AddressDescription) IsEmpty() bool {
-	return ad.Name == "" && ad.Street == "" && ad.City == ""
+	return ad.Number == "" && ad.Street == "" && ad.City == ""
 }
 
 func (ad *AddressDescription) String() (address string) {
