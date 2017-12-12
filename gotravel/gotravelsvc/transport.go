@@ -1,15 +1,14 @@
 package gotravelsvc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/gorilla/mux"
-
-	"bytes"
-	"errors"
-	"io/ioutil"
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -108,11 +107,14 @@ func errToStatus(err error) int {
 		ErrBadTimeFormat,
 		ErrBadTime,
 		ErrEndBeforeStart,
-		ErrBadDescription,
 		ErrTwoStartPlaces,
 		ErrTwoEndPlaces,
 		ErrBadMode,
 		ErrBadTravelMode:
+		return http.StatusBadRequest
+	}
+	switch err.(type) {
+	case ErrBadDescription, ErrDescriptionInaccurate:
 		return http.StatusBadRequest
 	}
 	return http.StatusInternalServerError

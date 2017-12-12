@@ -42,8 +42,6 @@ var (
 
 	ErrEndBeforeStart = errors.New("tripEnd time is before tripStart time")
 
-	ErrBadDescription = errors.New("could not parse place description")
-
 	ErrTwoStartPlaces = errors.New("more than one place marked as start")
 
 	ErrTwoEndPlaces = errors.New("more than one place marked as end")
@@ -55,6 +53,22 @@ var (
 		"travelMode is not a valid, available modes are: %s",
 		strings.Join(trip.TravelModeOptions, ", ")))
 )
+
+type ErrBadDescription struct {
+	Place *trip.PlaceConfig
+}
+
+func (err ErrBadDescription) Error() string {
+	return fmt.Sprintf("could not parse place description of %s", err.Place.Description)
+}
+
+type ErrDescriptionInaccurate struct {
+	Place *trip.PlaceConfig
+}
+
+func (err ErrDescriptionInaccurate) Error() string {
+	return fmt.Sprintf("description not accurate, no results found for %s", err.Place.Description)
+}
 
 type service struct {
 	cacheTransport *httpcache.Transport
@@ -148,39 +162,44 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 			}
 			decoder, err := mapstructure.NewDecoder(&config)
 			if err != nil {
-				println("error 2")
 				errChan <- err
 				return
 			}
 			if err = decoder.Decode(place.Description); err != nil {
-				errChan <- ErrBadDescription
+				errChan <- ErrBadDescription{place}
 				return
 			}
 			if _, ok := config.Result.(trip.Description); ok {
 				place.Description = config.Result
 			} else {
-				errChan <- ErrBadDescription
+				errChan <- ErrBadDescription{place}
 				return
 			}
 			switch tc.Mode {
 			case "address":
 				if place.Description.(*trip.AddressDescription).IsEmpty() {
-					errChan <- ErrBadDescription
+					errChan <- ErrBadDescription{place}
 					return
 				}
 			case "name":
 				if place.Description.(*trip.NameDescription).Name == "" {
-					errChan <- ErrBadDescription
+					errChan <- ErrBadDescription{place}
 					return
 				}
 			case "id":
 				if place.Description.(*trip.PlaceIDDescription).PlaceID == "" {
-					errChan <- ErrBadDescription
+					errChan <- ErrBadDescription{place}
 					return
 				}
 			}
 			placeID, err = place.Description.(trip.Description).MapsPlaceID(s, c)
-			if err != nil {
+			switch err {
+			case nil:
+				break
+			case trip.ErrZeroResults:
+				errChan <- ErrDescriptionInaccurate{place}
+				return
+			default:
 				errChan <- err
 				return
 			}

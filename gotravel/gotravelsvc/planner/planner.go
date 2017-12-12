@@ -111,7 +111,12 @@ func (planner *Planner) durationsAndDistances() (
 	length := len(planner.trip.Places)
 	currentTime := planner.trip.TripStart
 	var checkedTimes []time.Time
-	timeDelta := time.Duration(4 * time.Hour)
+	var timeDelta time.Duration
+	if !planner.trip.TripEnd.IsZero() && planner.trip.TripEnd.Sub(currentTime).Hours() <= 12 {
+		timeDelta = time.Duration(2) * time.Hour
+	} else {
+		timeDelta = time.Duration(4) * time.Hour
+	}
 	for !currentTime.After(planner.trip.TripEnd) {
 		checkedTimes = append(checkedTimes, currentTime)
 		currentTime = currentTime.Add(timeDelta)

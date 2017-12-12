@@ -1,34 +1,26 @@
 {
-  "apiKey": "AIzaSyAT1X4AFtXRyBGOoE6ENqw5spvmUV28tSs",
+  "apiKey": "AIzaSyA94IgBPOMjmj3GQSGgEhiMVaIYJC6zJrc",
   "mode": "address",
-  "tripStart": "2018-01-08T09:00:00+01:00",
+  "tripStart": "2018-01-08T08:00:00+01:00",
   "tripEnd": "2018-01-08T16:30:00+01:00",
-  "travelModes": {
-    "driving": false,
-    "walking": true,
-    "transit": true,
-    "bicycling": false
-  },
+  "travelModes": "walking",
   "places": [
     {
       "description": {
-        "name": "Muzeum Narodowe we Wrocławiu",
         "street": "plac Powstańców Warszawy",
         "number": "5",
-        "city": "Wrocław",
-        "postalCode": "48-300",
-        "country": "Poland"
+        "city": "Wrocław"
       },
       "priority": 8,
-      "stayDuration": 70
+      "stayDuration": 40
     },
     {
       "description": {
         "name": "Hydropolis",
         "street": "Na Grobli",
-        "number": "19-21",
+        "number": "27",
         "city": "Wrocław",
-        "postalCode": "50-001",
+        "postalCode": "50-421",
         "country": "Poland"
       },
       "priority": 10,
@@ -40,9 +32,9 @@
         "street": "Powstańców Śląskich",
         "number": "95",
         "city": "Wrocław",
-        "postalCode": "53-332",
         "country": "Poland"
-      }
+      },
+      "stayDuration": 5
     },
     {
       "description": {

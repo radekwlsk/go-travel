@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	ErrPlaceOpensTooLate   = errors.New("place opens too late")
 	ErrPlaceClosed         = errors.New("place closed at that day")
 	ErrPlaceClosesTooEarly = errors.New("place closes too early")
 	ErrTripEndsTooEarly    = errors.New("trip time ends before place departure")
@@ -126,24 +125,22 @@ func (a *Ant) init() {
 }
 
 func (a *Ant) setStep(i int, place *trip.Place) {
-	var dur, stay time.Duration
 	var dist int64
+	arrival, departure, _ := a.placeArrivalDeparture(place, i == 0)
 	if i > 0 {
-		dur = a.durations.At(a.at, place.Index, a.currentTime)
-		a.currentTime = a.currentTime.Add(dur)
-		a.totalTime += dur
 		dist = a.distances.At(a.at, place.Index, a.currentTime)
+		a.path.SetStep(i, place.Index, arrival.Sub(a.currentTime), dist)
+		a.totalTime += arrival.Sub(a.currentTime)
+		a.currentTime = arrival
 		a.totalDistance += dist
-		a.path.SetStep(i, place.Index, dur, dist)
 	} else {
 		a.path.Set(0, place.Index)
 	}
 	if place != a.startPlace || i == 0 {
 		a.visitTimes.Arrivals[place.Index] = a.currentTime
-		stay = time.Duration(place.StayDuration) * time.Minute
-		a.currentTime = a.currentTime.Add(stay)
-		a.visitTimes.Departures[place.Index] = a.currentTime
-		a.totalTime += stay
+		a.totalTime += departure.Sub(a.currentTime)
+		a.currentTime = departure
+		a.visitTimes.Departures[place.Index] = departure
 	}
 	a.at = place.Index
 	a.used[a.at] = true
@@ -231,40 +228,53 @@ func (a *Ant) pickNextPlace() (place *trip.Place, err error) {
 	}
 }
 
+func (a *Ant) placeArrivalDeparture(place *trip.Place, first bool) (arrival, departure time.Time, err error) {
+	var opn, cls time.Time
+	if first {
+		arrival = a.currentTime
+	} else {
+		dur := a.durations.At(a.at, place.Index, a.currentTime)
+		arrival = a.currentTime.Add(dur)
+	}
+	departure = arrival.Add(time.Duration(place.StayDuration) * time.Minute)
+	oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
+	if oc.Open.Time == "" || oc.Close.Time == "" {
+		return arrival, departure, ErrPlaceClosed
+	}
+	{
+		o := oc.Open.Time
+		y, m, d := arrival.In(place.Details.Location).Date()
+		hh, _ := strconv.Atoi(o[:2])
+		mm, _ := strconv.Atoi(o[2:])
+		opn = time.Date(y, m, d, hh, mm, 0, 0, place.Details.Location).In(arrival.Location())
+	}
+	if opn.After(arrival) {
+		departure = opn.Add(time.Duration(place.StayDuration) * time.Minute)
+	}
+	{
+		c := oc.Close.Time
+		y, m, d := departure.In(place.Details.Location).Date()
+		hh, _ := strconv.Atoi(c[:2])
+		mm, _ := strconv.Atoi(c[2:])
+		cls = time.Date(y, m, d, hh, mm, 0, 0, place.Details.Location).In(arrival.Location())
+	}
+	if cls.Before(departure) {
+		return arrival, departure, ErrPlaceClosesTooEarly
+	}
+	if a.trip.TripEnd.Before(departure) {
+		return arrival, departure, ErrTripEndsTooEarly
+	}
+	return
+}
+
 func (a *Ant) placeReachable(place *trip.Place) (ok bool, err error) {
 	if place.Details.PermanentlyClosed {
 		return false, ErrPlaceClosed
 	}
 
-	dur := a.durations.At(a.at, place.Index, a.currentTime)
-	var arvl, dprt, opn, cls time.Time
-	{
-		arvl = a.currentTime.Add(dur)
-		dprt = arvl.Add(time.Duration(place.StayDuration) * time.Minute)
-		oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
-		if oc.Open.Time == "" || oc.Close.Time == "" {
-			return false, ErrPlaceClosed
-		}
-		o := oc.Open.Time
-		y, m, d := arvl.In(place.Details.Location).Date()
-		hh, _ := strconv.Atoi(o[:2])
-		mm, _ := strconv.Atoi(o[2:])
-		opn = time.Date(y, m, d, hh, mm, 0, 0, place.Details.Location).In(arvl.Location())
-		c := oc.Close.Time
-		y, m, d = dprt.In(place.Details.Location).Date()
-		hh, _ = strconv.Atoi(c[:2])
-		mm, _ = strconv.Atoi(c[2:])
-		cls = time.Date(y, m, d, hh, mm, 0, 0, place.Details.Location).In(arvl.Location())
-	}
-
-	if opn.After(arvl) {
-		return false, ErrPlaceOpensTooLate
-	}
-	if cls.Before(dprt) {
-		return false, ErrPlaceClosesTooEarly
-	}
-	if a.trip.TripEnd.Before(dprt) {
-		return false, ErrTripEndsTooEarly
+	_, dprt, err := a.placeArrivalDeparture(place, false)
+	if err != nil {
+		return false, err
 	}
 
 	if a.endPlace != nil {

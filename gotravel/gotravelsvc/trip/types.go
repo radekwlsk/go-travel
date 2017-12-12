@@ -2,6 +2,7 @@ package trip
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/afrometal/go-travel/utils"
 	"googlemaps.github.io/maps"
 )
+
+var ErrZeroResults = errors.New("google maps API query returned no result")
 
 type PlaceConfig struct {
 	Priority     int         `json:"priority,omitempty"`
@@ -90,7 +93,7 @@ func (t *Trip) CreateSchedule() string {
 type Configuration struct {
 	APIKey              string         `json:"apiKey"`
 	Mode                string         `json:"mode"`
-	Language            string         `json:"language"`
+	Language            string         `json:"language,omitempty"`
 	TripStart           string         `json:"tripStart"`
 	TripEnd             string         `json:"tripEnd"`
 	TravelMode          string         `json:"travelMode,omitempty"`
@@ -125,6 +128,7 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 	if err != nil {
 		return err
 	}
+
 	var location *time.Location
 	{
 		offset := resp.UTCOffset * 60
@@ -132,14 +136,17 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 		location = time.FixedZone(name, offset)
 	}
 	var openingHours = make([]maps.OpeningHoursPeriod, 7)
-	for _, o := range resp.OpeningHours.Periods {
-		openingHours[o.Open.Day] = o
-	}
 
-	for i, o := range openingHours {
-		if o.Open.Time == "" || o.Close.Time == "" {
-			o.Open.Day = time.Weekday(i)
-			o.Close.Day = time.Weekday(i)
+	if resp.OpeningHours != nil {
+		for _, o := range resp.OpeningHours.Periods {
+			openingHours[o.Open.Day] = o
+		}
+
+		for i, o := range openingHours {
+			if o.Open.Time == "" || o.Close.Time == "" {
+				openingHours[i].Open.Day = time.Weekday(i)
+				openingHours[i].Close.Day = time.Weekday(i)
+			}
 		}
 	}
 
@@ -221,10 +228,11 @@ func (p *Path) Path() []int {
 
 type Description interface {
 	MapsPlaceID(interface{}, *maps.Client) (string, error)
+	String() string
 }
 
 type AddressDescription struct {
-	Name       string `json:"name"`
+	Name       string `json:"name,omitempty"`
 	Street     string `json:"street"`
 	Number     string `json:"number"`
 	City       string `json:"city"`
@@ -236,10 +244,13 @@ func (ad *AddressDescription) IsEmpty() bool {
 	return ad.Name == "" && ad.Street == "" && ad.City == ""
 }
 
-func (ad *AddressDescription) toAddressString() (address string) {
+func (ad *AddressDescription) String() (address string) {
 	address = fmt.Sprintf(
-		"%s, %s %s, %s%s",
-		ad.Name,
+		"%s%s %s, %s%s",
+		utils.IfThenElse(
+			ad.Name == "",
+			"",
+			fmt.Sprintf("%s, ", ad.Name)),
 		ad.Street,
 		ad.Number,
 		utils.IfThenElse(
@@ -257,15 +268,19 @@ func (ad *AddressDescription) toAddressString() (address string) {
 func (ad *AddressDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	var placeId string
 	{
-		r := &maps.GeocodingRequest{
-			Address: ad.toAddressString(),
+		r := &maps.PlaceAutocompleteRequest{
+			Input: ad.String(),
+			Types: maps.AutocompletePlaceTypeEstablishment,
 		}
-		var resp []maps.GeocodingResult
-		resp, err := c.Geocode(context.Background(), r)
+		var resp maps.AutocompleteResponse
+		resp, err := c.PlaceAutocomplete(context.Background(), r)
 		if err != nil {
+			if strings.Contains(err.Error(), "ZERO_RESULTS") {
+				return "", ErrZeroResults
+			}
 			return "", err
 		}
-		placeId = resp[0].PlaceID
+		placeId = resp.Predictions[0].PlaceID
 	}
 
 	return placeId, nil
@@ -280,10 +295,14 @@ func (nd *NameDescription) MapsPlaceID(service interface{}, c *maps.Client) (str
 	{
 		r := &maps.TextSearchRequest{
 			Query: nd.Name,
+			Type:  maps.PlaceTypeEstablishment,
 		}
 		var resp maps.PlacesSearchResponse
 		resp, err := c.TextSearch(context.Background(), r)
 		if err != nil {
+			if strings.Contains(err.Error(), "ZERO_RESULTS") {
+				return "", ErrZeroResults
+			}
 			return "", err
 		}
 		placeId = resp.Results[0].PlaceID
@@ -292,10 +311,18 @@ func (nd *NameDescription) MapsPlaceID(service interface{}, c *maps.Client) (str
 	return placeId, nil
 }
 
+func (nd *NameDescription) String() string {
+	return nd.Name
+}
+
 type PlaceIDDescription struct {
 	PlaceID string `json:"place_id"`
 }
 
 func (pid *PlaceIDDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	return pid.PlaceID, nil
+}
+
+func (pid *PlaceIDDescription) String() string {
+	return pid.PlaceID
 }
