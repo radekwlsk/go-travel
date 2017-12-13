@@ -10,7 +10,7 @@ box "Gotravel Service"
 end box
 collections "GoogleMaps APIs " as G
 
-C -> T: send Trip Configuration JSON Request
+C -> T: request with \nJSON configuration
 activate T
 T -> T: DecodeTripPlanRequest
 T -> E: TripPlan
@@ -77,7 +77,7 @@ T <- E: tripPlanResponse
 deactivate E
 activate T
 T -> T: EncodeTripPlanResponse
-C <- T: Trip Response
+C <- T: Response with Trip JSON
 deactivate T
 
 hide footbox

@@ -54,9 +54,13 @@ repeat
         travel time and stay duration
         add step to ""**place**"";
     endif
-
 repeat while (all places visited?) is (no)
-
+if (must return to start?) then (yes)
+    :update ""**totalTime**"" by travel time
+    update ""**totalDistance**""
+    advance ""**currentTime**"" by travel time
+    add step to ""**startPlace**"";
+endif
 :prepare ""**Result**"";
 
 :send ""**Result**"" over ""**channel**"";
