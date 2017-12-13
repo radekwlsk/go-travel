@@ -54,16 +54,11 @@ create P
 S -> P: NewPlanner
 S -> P: Evaluate
 activate P
-P -> P: getTimesAndDistances
-activate P
-loop for every 4 hours
+loop for every 2 or 4 hours
  P -> G: DistanceMatrixRequest
  P <- G: DistanceMatrixResponse
- P -> P: update durations, durations
+ P -> P: update durations, distances
 end loop
-P -> P: return durations, distances
-deactivate P
-|||
 ref over P
  ACO on separate
  activity diagram
