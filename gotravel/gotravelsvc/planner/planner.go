@@ -14,15 +14,13 @@ import (
 	"googlemaps.github.io/maps"
 )
 
-var (
-	Iterations = 1000
-	Boost      = 5
-	Ants       = 5
-)
+const Iterations = 10000
 
 type Planner struct {
 	client *maps.Client
 	trip   *trip.Trip
+	ants   int
+	boost  float64
 }
 
 func NewPlanner(c *maps.Client, t *trip.Trip) *Planner {
@@ -33,58 +31,65 @@ func NewPlanner(c *maps.Client, t *trip.Trip) *Planner {
 }
 
 func (planner *Planner) Evaluate() (err error) {
-	var length int
 	var durations *ants.TimesMappedDurationsMatrix
 	var distances *ants.TimesMappedDistancesMatrix
 	var pheromones *ants.PheromonesMatrix
 	var resultChannel = make(chan ants.Result)
 	var swarm []*ants.Ant
-
-	length = len(planner.trip.Places)
-
-	durations, distances, err = planner.durationsAndDistances()
-	if err != nil {
-		return err
+	{
+		var length int
+		var priorities float64
+		for _, p := range planner.trip.Places {
+			priorities += float64(p.Priority)
+			length++
+		}
+		planner.ants = int(math.Ceil(5.0 * math.Sqrt(float64(length))))
+		planner.boost = priorities / float64(length)
+		durations, distances, err = planner.durationsAndDistances()
+		if err != nil {
+			return err
+		}
+		swarm = make([]*ants.Ant, planner.ants)
+		pheromones = ants.NewPheromonesMatrix(length, planner.boost, sync.Mutex{})
 	}
 
-	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
-	swarm = make([]*ants.Ant, Ants)
-
-	pheromones = ants.NewPheromonesMatrix(length, float64(Boost), sync.Mutex{})
-
 	var bestResult = ants.NewEmptyResult()
-	var results = make([]ants.Result, Ants)
+	var results = make([]ants.Result, planner.ants)
 
-	for i := 0; i < Ants; i++ {
+	for i := 0; i < planner.ants; i++ {
 		swarm[i] = ants.NewAnt(planner.trip, distances, durations, pheromones, resultChannel)
 	}
 	for i := 0; i < Iterations; i++ {
-		for i := 0; i < Ants; i++ {
+		for i := 0; i < planner.ants; i++ {
 			go swarm[i].FindFood()
 		}
-		for i := 0; i < Ants; i++ {
-			result := <-resultChannel
-			results[i] = result
-			if result.Priorities() > bestResult.Priorities() ||
-				(result.Priorities() == bestResult.Priorities() && result.Time() < bestResult.Time()) {
+		for i := 0; i < planner.ants; i++ {
+			results[i] = <-resultChannel
+
+			if results[i].BetterThan(bestResult) {
 				fmt.Printf(
 					"better result! time: %.2f minutes, priorities: %d\n",
-					float64(result.Time()/time.Minute),
-					result.Priorities(),
+					float64(results[i].Time()/time.Minute),
+					results[i].Priorities(),
 				)
-				bestResult = result
+				bestResult = results[i]
 			}
 		}
-		pheromones.Evaporate(Boost, Iterations)
-		pr := float64(bestResult.Priorities())
-		b := math.Pow(2.0*pr, 2.0)
-		for i := 0; i < Ants; i++ {
-			go func(brp, rp float64, p trip.Path) {
-				r := math.Pow(brp+rp, 2.0) / b
-				ph := float64(Boost) * r
+		pheromones.Evaporate(planner.boost, Iterations)
+		bestP := float64(bestResult.Priorities())
+		b := math.Pow(2.0*bestP, 2.0)
+		pheromones.IntensifyAlong(bestResult.Path(), planner.boost)
+		var wg sync.WaitGroup
+		for _, r := range results {
+			wg.Add(1)
+			go func(rP float64, p trip.Path) {
+				defer wg.Done()
+				r := math.Pow(bestP+rP, 2.0) / b
+				ph := planner.boost * r
 				pheromones.IntensifyAlong(p, ph)
-			}(pr, float64(results[i].Priorities()), results[i].Path())
+			}(float64(r.Priorities()), r.Path())
 		}
+		wg.Wait()
 	}
 	close(resultChannel)
 
