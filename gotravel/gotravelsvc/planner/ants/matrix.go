@@ -43,10 +43,10 @@ func (p *PheromonesMatrix) IntensifyAlong(path trip.Path, pheromone float64) {
 	}
 }
 
-func (p *PheromonesMatrix) Evaporate(boost, iterations int) {
+func (p *PheromonesMatrix) Evaporate(boost float64, iterations int) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
-	d := float64(boost) / float64(iterations)
+	d := boost / float64(iterations)
 	rows, cols := p.matrix.Caps()
 	for r := 0; r < rows; r++ {
 		for c := 0; c < cols; c++ {
