@@ -126,18 +126,23 @@ func (a *Ant) init() {
 
 func (a *Ant) setStep(i int, place *trip.Place) {
 	var dist int64
-	arrival, departure, _ := a.placeArrivalDeparture(place, i == 0)
+	var dur time.Duration
+	arrival, departure, err := a.placeArrivalDeparture(place, i == 0)
+	if err != nil {
+		panic(err.Error())
+	}
 	if i > 0 {
 		dist = a.distances.At(a.at, place.Index, a.currentTime)
-		a.path.SetStep(i, place.Index, arrival.Sub(a.currentTime), dist)
-		a.totalTime += arrival.Sub(a.currentTime)
+		dur = arrival.Sub(a.currentTime)
+		a.path.SetStep(i, place.Index, dur, dist)
+		a.totalTime += dur
 		a.currentTime = arrival
 		a.totalDistance += dist
 	} else {
 		a.path.Set(0, place.Index)
 	}
 	if place != a.startPlace || i == 0 {
-		a.visitTimes.Arrivals[place.Index] = a.currentTime
+		a.visitTimes.Arrivals[place.Index] = arrival
 		a.totalTime += departure.Sub(a.currentTime)
 		a.currentTime = departure
 		a.visitTimes.Departures[place.Index] = departure
@@ -272,7 +277,7 @@ func (a *Ant) placeReachable(place *trip.Place) (ok bool, err error) {
 		return false, ErrPlaceClosed
 	}
 
-	_, dprt, err := a.placeArrivalDeparture(place, false)
+	_, dprt, err := a.placeArrivalDeparture(place, a.currentTime.Equal(a.trip.TripStart))
 	if err != nil {
 		return false, err
 	}

@@ -37,7 +37,6 @@ func (planner *Planner) Evaluate() (err error) {
 	var durations *ants.TimesMappedDurationsMatrix
 	var distances *ants.TimesMappedDistancesMatrix
 	var pheromones *ants.PheromonesMatrix
-	var pherMutex = sync.Mutex{}
 	var resultChannel = make(chan ants.Result)
 	var swarm []*ants.Ant
 
@@ -51,22 +50,21 @@ func (planner *Planner) Evaluate() (err error) {
 	Ants = int(math.Ceil(float64(Ants) * math.Sqrt(float64(length))))
 	swarm = make([]*ants.Ant, Ants)
 
-	pheromones = ants.NewPheromonesMatrix(length, float64(Boost), pherMutex)
+	pheromones = ants.NewPheromonesMatrix(length, float64(Boost), sync.Mutex{})
 
 	var bestResult = ants.NewEmptyResult()
+	var results = make([]ants.Result, Ants)
 
 	for i := 0; i < Ants; i++ {
 		swarm[i] = ants.NewAnt(planner.trip, distances, durations, pheromones, resultChannel)
 	}
 	for i := 0; i < Iterations; i++ {
-		//if i%int(float64(Iterations)/10.0) == 0 {
-		//	pheromones = NewPheromonesMatrix(length, float64(Boost), pherMutex)
-		//}
 		for i := 0; i < Ants; i++ {
 			go swarm[i].FindFood()
 		}
 		for i := 0; i < Ants; i++ {
 			result := <-resultChannel
+			results[i] = result
 			if result.Priorities() > bestResult.Priorities() ||
 				(result.Priorities() == bestResult.Priorities() && result.Time() < bestResult.Time()) {
 				fmt.Printf(
@@ -74,11 +72,18 @@ func (planner *Planner) Evaluate() (err error) {
 					float64(result.Time()/time.Minute),
 					result.Priorities(),
 				)
-				pheromones.IntensifyAlong(result.Path(), Boost)
 				bestResult = result
 			}
 		}
 		pheromones.Evaporate(Boost, Iterations)
+		for i := 0; i < Ants; i++ {
+			go func(best, result float64, path trip.Path) {
+				ratio := math.Pow(best+result, 2.0)
+				ratio /= math.Pow(2.0*best, 2.0)
+				pheromone := float64(Boost) * ratio
+				pheromones.IntensifyAlong(path, pheromone)
+			}(float64(bestResult.Priorities()), float64(results[i].Priorities()), results[i].Path())
+		}
 	}
 	close(resultChannel)
 
@@ -116,7 +121,7 @@ func (planner *Planner) durationsAndDistances() (
 	currentTime := planner.trip.TripStart
 	var checkedTimes []time.Time
 	var timeDelta time.Duration
-	if !planner.trip.TripEnd.IsZero() && planner.trip.TripEnd.Sub(currentTime).Hours() <= 12 {
+	if planner.trip.TripEnd.Sub(currentTime).Hours() <= 12 {
 		timeDelta = time.Duration(2) * time.Hour
 	} else {
 		timeDelta = time.Duration(4) * time.Hour
@@ -137,7 +142,7 @@ func (planner *Planner) durationsAndDistances() (
 		r := &maps.DistanceMatrixRequest{
 			Origins:       originAddresses,
 			Destinations:  destinationAddresses,
-			DepartureTime: strconv.FormatInt(t.Unix(), 10),
+			DepartureTime: strconv.Itoa(int(t.Unix())),
 			Mode:          planner.trip.TravelMode,
 		}
 		var resp *maps.DistanceMatrixResponse

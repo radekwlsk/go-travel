@@ -1,6 +1,7 @@
 package ants
 
 import (
+	"errors"
 	"math"
 	"sync"
 	"time"
@@ -34,11 +35,11 @@ func (p *PheromonesMatrix) AddAt(i, j int, value float64) {
 	p.Set(i, j, p.At(i, j)+value)
 }
 
-func (p *PheromonesMatrix) IntensifyAlong(path trip.Path, boost int) {
+func (p *PheromonesMatrix) IntensifyAlong(path trip.Path, pheromone float64) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 	for _, step := range path.Steps {
-		p.AddAt(step.From, step.To, float64(boost))
+		p.AddAt(step.From, step.To, pheromone)
 	}
 }
 
@@ -73,10 +74,10 @@ func (m *timesMappedMatrix) matrixClosestTo(t time.Time) *mat.Dense {
 	closest := m.times[0]
 	if len(m.times) > 1 {
 		diff := absTimeDifference(t, closest)
-		for _, t2 := range m.times[1:] {
+		for i, t2 := range m.times[1:] {
 			d := absTimeDifference(t, t2)
 			if d < diff {
-				closest = t2
+				closest = m.times[i]
 			}
 		}
 	}
@@ -102,14 +103,20 @@ func absTimeDifference(t1 time.Time, t2 time.Time) time.Duration {
 }
 
 func (m *TimesMappedDurationsMatrix) Set(i, j int, t time.Time, duration time.Duration) {
-	m.matrixClosestTo(t).Set(i, j, float64(duration.Nanoseconds()))
+	m.matrices[t].Set(i, j, float64(duration.Nanoseconds()))
 }
 
 func (m *TimesMappedDurationsMatrix) At(i, j int, t time.Time) time.Duration {
+	if i == j {
+		panic(errors.New("can not travel between the same place"))
+	}
 	return time.Duration(m.matrixClosestTo(t).At(i, j))
 }
 
 func (m *TimesMappedDurationsMatrix) AtAs(i, j int, t time.Time, as time.Duration) float64 {
+	if i == j {
+		panic(errors.New("can not travel between the same place"))
+	}
 	return float64(m.matrixClosestTo(t).At(i, j) / float64(as))
 }
 
@@ -124,9 +131,12 @@ func NewDistanceMatrix(n int, times []time.Time) *TimesMappedDistancesMatrix {
 }
 
 func (m *TimesMappedDistancesMatrix) Set(i, j int, t time.Time, value int64) {
-	m.matrixClosestTo(t).Set(i, j, float64(value))
+	m.matrices[t].Set(i, j, float64(value))
 }
 
 func (m *TimesMappedDistancesMatrix) At(i, j int, t time.Time) int64 {
+	if i == j {
+		panic(errors.New("can not travel between the same place"))
+	}
 	return int64(m.matrixClosestTo(t).At(i, j))
 }
