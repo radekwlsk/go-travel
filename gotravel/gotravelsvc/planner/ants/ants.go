@@ -66,7 +66,6 @@ func (a *Ant) SetPheromones(p *PheromonesMatrix) {
 }
 
 func (a *Ant) FindFood() {
-	a.endPlace = a.trip.EndPlace
 	err := a.before()
 	switch err {
 	case ErrTripEnded:
@@ -92,7 +91,6 @@ func (a *Ant) FindFood() {
 	default:
 		panic(err.Error())
 	}
-
 }
 
 func (a *Ant) setStart() error {
@@ -156,6 +154,7 @@ func (a *Ant) isUsed(place *trip.Place) bool {
 }
 
 func (a *Ant) before() error {
+	a.endPlace = a.trip.EndPlace
 	a.visitTimes = NewVisitTimes(a.n)
 	a.used = make(Used, a.n)
 	a.currentTime = a.trip.TripStart
@@ -193,7 +192,15 @@ func (a *Ant) generatePath() error {
 			panic("unexpected error returned from Ant.pickNextPlace()")
 		}
 	}
-	return nil
+	switch a.endPlace {
+	case nil:
+		return ErrTripEnded
+	case a.startPlace:
+		a.setStep(a.n, a.startPlace)
+		return ErrTripEnded
+	default:
+		panic("end place != start place left to visit after loop")
+	}
 }
 
 func (a *Ant) pickNextPlace() (place *trip.Place, err error) {
@@ -213,7 +220,6 @@ func (a *Ant) pickNextPlace() (place *trip.Place, err error) {
 			pheromones = append(pheromones, pheromone)
 		}
 	}
-
 	l := len(reachable)
 	if l == 0 {
 		if a.startPlace == a.endPlace {
@@ -241,6 +247,11 @@ func (a *Ant) placeArrivalDeparture(place *trip.Place, first bool) (arrival, dep
 		dur := a.durations.At(a.at, place.Index, a.currentTime)
 		arrival = a.currentTime.Add(dur)
 	}
+
+	if !first && place == a.startPlace {
+		return arrival, arrival, nil
+	}
+
 	departure = arrival.Add(time.Duration(place.StayDuration) * time.Minute)
 	oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
 	if oc.Open.Time == "" || oc.Close.Time == "" {
