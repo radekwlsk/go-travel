@@ -25,11 +25,9 @@ while (""Iterations"" of iterations run?) is (no)
     end fork
 
     while (received results from all ants?) is (no)
-        :receive ""**result**"" over ""**resultChannel**"";
+        :receive ""**result**"" over ""**resultChannel**"" and save it;
 
-        if (""**result**.priority"" > ""**bestResult**.priority""
-or ""**result**.priority"" = ""**bestResult**.priority""
-and ""**result**.totalTime"" < ""**bestResult**.totalTime"") then (true)
+        if (""**result**"" better than ""**bestResult**"") then (true)
             :overwrite ""**bestResult**"" with ""**result**"";
         else (false)
         endif
@@ -37,17 +35,14 @@ and ""**result**.totalTime"" < ""**bestResult**.totalTime"") then (true)
     :evaporate ""**pheromones**"";
     fork
         :intensify ""**pheromones**"" along first ""**result**"";
-        detach
     fork again
         :intensify ""**pheromones**"" along second ""**result**"";
-        detach
     fork again
         -[hidden]->
         :...;
         detach
     fork again
         :intensify ""**pheromones**"" along last ""**result**"";
-        detach
     end fork
 endwhile (yes)
 
