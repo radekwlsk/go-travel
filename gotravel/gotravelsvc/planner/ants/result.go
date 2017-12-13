@@ -35,6 +35,25 @@ func NewEmptyResult() Result {
 	}
 }
 
+func (r *Result) BetterThan(o Result) bool {
+	if r.priorities < o.priorities {
+		return false
+	}
+	if r.priorities > o.priorities {
+		return true
+	}
+
+	if r.priorities == o.priorities {
+		if r.path.Size() > o.path.Size() {
+			return true
+		}
+		if r.path.Size() == o.path.Size() && r.time < o.time {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Result) Path() trip.Path {
 	return r.path
 }
