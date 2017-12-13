@@ -35,7 +35,20 @@ and ""**result**.totalTime"" < ""**bestResult**.totalTime"") then (true)
         endif
     endwhile (yes)
     :evaporate ""**pheromones**"";
-    :intensify ""**pheromones**"" along paths;
+    fork
+        :intensify ""**pheromones**"" along first ""**result**"";
+        detach
+    fork again
+        :intensify ""**pheromones**"" along second ""**result**"";
+        detach
+    fork again
+        -[hidden]->
+        :...;
+        detach
+    fork again
+        :intensify ""**pheromones**"" along last ""**result**"";
+        detach
+    end fork
 endwhile (yes)
 
 :update ""**trip**"" with ""**bestResult**"" data: arrival/departure times, trip end time, total distance, start/end place if not set;

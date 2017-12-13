@@ -76,13 +76,14 @@ func (planner *Planner) Evaluate() (err error) {
 			}
 		}
 		pheromones.Evaporate(Boost, Iterations)
+		pr := float64(bestResult.Priorities())
+		b := math.Pow(2.0*pr, 2.0)
 		for i := 0; i < Ants; i++ {
-			go func(best, result float64, path trip.Path) {
-				ratio := math.Pow(best+result, 2.0)
-				ratio /= math.Pow(2.0*best, 2.0)
-				pheromone := float64(Boost) * ratio
-				pheromones.IntensifyAlong(path, pheromone)
-			}(float64(bestResult.Priorities()), float64(results[i].Priorities()), results[i].Path())
+			go func(brp, rp float64, p trip.Path) {
+				r := math.Pow(brp+rp, 2.0) / b
+				ph := float64(Boost) * r
+				pheromones.IntensifyAlong(p, ph)
+			}(pr, float64(results[i].Priorities()), results[i].Path())
 		}
 	}
 	close(resultChannel)
