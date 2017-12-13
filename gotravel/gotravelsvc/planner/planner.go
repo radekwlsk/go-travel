@@ -45,7 +45,7 @@ func (planner *Planner) Evaluate() (err error) {
 		}
 		planner.ants = int(math.Ceil(5.0 * math.Sqrt(float64(length))))
 		planner.boost = priorities / float64(length)
-		durations, distances, err = planner.durationsAndDistances()
+		durations, distances, err = durationsAndDistances(planner.trip, planner.client)
 		if err != nil {
 			return err
 		}
@@ -118,21 +118,21 @@ func (planner *Planner) Evaluate() (err error) {
 	return err
 }
 
-func (planner *Planner) durationsAndDistances() (
+func durationsAndDistances(trip *trip.Trip, client *maps.Client) (
 	durations *ants.TimesMappedDurationsMatrix,
 	distances *ants.TimesMappedDistancesMatrix,
 	err error,
 ) {
-	length := len(planner.trip.Places)
-	currentTime := planner.trip.TripStart
+	length := len(trip.Places)
+	currentTime := trip.TripStart
 	var checkedTimes []time.Time
 	var timeDelta time.Duration
-	if planner.trip.TripEnd.Sub(currentTime).Hours() <= 12 {
+	if trip.TripEnd.Sub(currentTime).Hours() <= 12 {
 		timeDelta = time.Duration(2) * time.Hour
 	} else {
 		timeDelta = time.Duration(4) * time.Hour
 	}
-	for !currentTime.After(planner.trip.TripEnd) {
+	for !currentTime.After(trip.TripEnd) {
 		checkedTimes = append(checkedTimes, currentTime)
 		currentTime = currentTime.Add(timeDelta)
 	}
@@ -140,7 +140,7 @@ func (planner *Planner) durationsAndDistances() (
 	distances = ants.NewDistanceMatrix(length, checkedTimes)
 	destinationAddresses := make([]string, length)
 	originAddresses := make([]string, length)
-	for _, place := range planner.trip.Places {
+	for _, place := range trip.Places {
 		destinationAddresses[place.Index] = place.Details.FormattedAddress
 		originAddresses[place.Index] = place.Details.FormattedAddress
 	}
@@ -149,10 +149,10 @@ func (planner *Planner) durationsAndDistances() (
 			Origins:       originAddresses,
 			Destinations:  destinationAddresses,
 			DepartureTime: strconv.Itoa(int(t.Unix())),
-			Mode:          planner.trip.TravelMode,
+			Mode:          trip.TravelMode,
 		}
 		var resp *maps.DistanceMatrixResponse
-		resp, err := planner.client.DistanceMatrix(context.Background(), r)
+		resp, err := client.DistanceMatrix(context.Background(), r)
 		if err != nil {
 			return durations, distances, err
 		}
@@ -160,7 +160,7 @@ func (planner *Planner) durationsAndDistances() (
 			for j, element := range row.Elements {
 				if i != j {
 					if element.Status == "OK" {
-						if planner.trip.TravelMode == maps.TravelModeDriving {
+						if trip.TravelMode == maps.TravelModeDriving {
 							durations.Set(i, j, t, element.DurationInTraffic)
 						} else {
 							durations.Set(i, j, t, element.Duration)
