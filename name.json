@@ -1,25 +1,37 @@
 {
   "apiKey": "AIzaSyD6tHWGXEjH8ACmVXsEAB6q-JOwtCBY6v8",
   "mode": "name",
-  "tripStart": "2018-01-09T9:00:00+01:00",
-  "tripEnd": "2018-01-09T16:30:00+01:00",
+  "tripStart": "2018-01-10T6:00:00+01:00",
+  "tripEnd": "2018-01-10T15:00:00+01:00",
   "travelMode": "driving",
   "language": "pl",
   "places": [
     {
       "description": {
-        "name": "Muzeum Narodowe we Wrocławiu"
+        "name": "Muzeum Narodowe, we Wrocławiu"
       },
-      "stayDuration": 40,
-      "priority": 8
+      "priority": 8,
+      "stayDuration": 40
     },
     {
       "description": {
-        "name": "Hala Targowa, Wrocław"
+        "name": "Hydropolis Wrocław"
       },
-      "priority": 5,
-      "stayDuration": 30,
-      "start": true
+      "priority": 10,
+      "stayDuration": 50
+    },
+    {
+      "description": {
+        "name": "Punkt widokowy Sky Tower, Wrocław"
+      },
+      "stayDuration": 5
+    },
+    {
+      "description": {
+        "name": "Muzeum Współczesne we Wrocławiu"
+      },
+      "priority": 8,
+      "stayDuration": 60
     }
   ]
 }

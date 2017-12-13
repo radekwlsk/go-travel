@@ -31,11 +31,11 @@ while (""Iterations"" of iterations run?) is (no)
 or ""**result**.priority"" = ""**bestResult**.priority""
 and ""**result**.totalTime"" < ""**bestResult**.totalTime"") then (true)
             :overwrite ""**bestResult**"" with ""**result**"";
-            :intensify ""**pheromones**"" along the new best path;
         else (false)
         endif
     endwhile (yes)
     :evaporate ""**pheromones**"";
+    :intensify ""**pheromones**"" along paths;
 endwhile (yes)
 
 :update ""**trip**"" with ""**bestResult**"" data: arrival/departure times, trip end time, total distance, start/end place if not set;

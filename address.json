@@ -1,12 +1,14 @@
 {
   "apiKey": "AIzaSyA94IgBPOMjmj3GQSGgEhiMVaIYJC6zJrc",
   "mode": "address",
-  "tripStart": "2018-01-08T08:00:00+01:00",
-  "tripEnd": "2018-01-08T16:30:00+01:00",
+  "tripStart": "2018-01-10T08:00:00+01:00",
+  "tripEnd": "2018-01-10T17:30:00+01:00",
   "travelModes": "walking",
+  "language": "pl",
   "places": [
     {
       "description": {
+        "name": "Muzeum Narodowe",
         "street": "plac Powstańców Warszawy",
         "number": "5",
         "city": "Wrocław"
