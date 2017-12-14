@@ -1,39 +1,64 @@
-// Package http provides a HTTP client for the string service.
-package http
+package main
 
 import (
-	"net/url"
-	"strings"
-	
-	httptransport "github.com/go-kit/kit/transport/http"
-	
-	"../gotravelsvc"
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"os"
+
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotraveltransport"
+	"github.com/kr/pretty"
 )
 
-// New returns Service based on HTTP server at remote instance.
-// Instance is expected to come in "host:port" form.
-func New(instance string) gotravelsvc.Service {
-	if !strings.HasPrefix(instance, "http") {
-		instance = "http://" + instance
+func main() {
+	var (
+		httpAddr = flag.String("http-addr", "127.0.0.1:8080",
+			"HTTP address of gotravelcli in host:port format")
+		method = flag.String("method", "tripplan", "tripplan, ")
+	)
+	flag.Parse()
+
+	var (
+		svc gotravelservice.Service
+		err error
+	)
+
+	if *httpAddr != "" {
+		svc, err = gotraveltransport.MakeHTTPClient(*httpAddr)
 	}
-	u, err := url.Parse(instance)
+
 	if err != nil {
-		panic(err)
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
-	var tripPlanEndpoint = httptransport.NewClient(
-		"POST",
-		copyURL(u, "/trip"),
-		gotravelsvc.EncodeRequest,
-		gotravelsvc.DecodeTripPlanResponse,
-	).Endpoint()
-	
-	return gotravelsvc.Endpoints{
-		TripPlanEndpoint: tripPlanEndpoint,
+
+	switch *method {
+	case "tripplan":
+		raw, err := ioutil.ReadFile(flag.Args()[0])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error reading JSON file: %v\n", err)
+			os.Exit(1)
+		}
+		var tc trip.Configuration
+		json.Unmarshal(raw, &tc)
+		tripPlan(context.Background(), svc, tc)
+
+	default:
+		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)
+		os.Exit(1)
 	}
+
 }
 
-func copyURL(base *url.URL, path string) *url.URL {
-	next := *base
-	next.Path = path
-	return &next
+func tripPlan(ctx context.Context, service gotravelservice.Service, tc trip.Configuration) {
+	t, err := service.TripPlan(ctx, tc)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Fprintf(os.Stdout, "%s", pretty.Sprint(t))
 }

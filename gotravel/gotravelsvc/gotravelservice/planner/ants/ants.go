@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
 
 	"github.com/gonum/floats"
 )

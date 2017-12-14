@@ -3,19 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelendpoint"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotraveltransport"
 	"github.com/go-kit/kit/log"
-
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc"
 )
 
 func main() {
 	var (
-		httpAddr = flag.String("http.addr", ":8080", "HTTP port to listen")
+		httpAddr = flag.String("http-addr", ":8080", "HTTP port to listen")
 	)
 	flag.Parse()
 
@@ -29,17 +31,11 @@ func main() {
 	logger.Log("msg", "gotravel service started")
 	defer logger.Log("msg", "finished")
 
-	var s gotravelsvc.Service
-	{
-		s = gotravelsvc.NewService()
-		s = gotravelsvc.NewLoggingMiddleware(s, logger)
-		//s = gotravelsvc.NewInstrumentingMiddleware(s)
-	}
-
-	var h http.Handler
-	{
-		h = gotravelsvc.MakeHTTPHandler(s, log.With(logger, "component", "HTTP"))
-	}
+	var (
+		service     = gotravelservice.New(logger)
+		endpoints   = gotravelendpoint.New(service, logger)
+		httpHandler = gotraveltransport.MakeHTTPHandler(endpoints, logger)
+	)
 
 	errs := make(chan error)
 	go func() {
@@ -49,8 +45,13 @@ func main() {
 	}()
 
 	go func() {
+		httpListener, err := net.Listen("tcp", *httpAddr)
+		if err != nil {
+			errs <- err
+			return
+		}
 		logger.Log("transport", "HTTP", "addr", *httpAddr)
-		errs <- http.ListenAndServe(*httpAddr, h)
+		errs <- http.Serve(httpListener, httpHandler)
 	}()
 
 	logger.Log("exit", <-errs)

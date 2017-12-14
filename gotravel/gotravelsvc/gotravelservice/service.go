@@ -1,4 +1,4 @@
-package gotravelsvc
+package gotravelservice
 
 import (
 	"context"
@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/planner"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
 	"github.com/afrometal/go-travel/utils"
+	"github.com/go-kit/kit/log"
 	"github.com/gregjones/httpcache"
 	"github.com/mitchellh/mapstructure"
 	"googlemaps.github.io/maps"
@@ -21,6 +22,15 @@ import (
 // the actual actions performed by service on data.
 type Service interface {
 	TripPlan(context.Context, trip.Configuration) (trip.Trip, error)
+}
+
+func New(logger log.Logger) Service {
+	var s Service
+	{
+		s = NewService()
+		s = NewLoggingMiddleware(logger)(s)
+	}
+	return s
 }
 
 var (
@@ -81,7 +91,6 @@ func NewService() Service {
 }
 
 func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.Trip, err error) {
-
 	if tc.APIKey == "" {
 		return trip.Trip{}, ErrAPIKeyEmpty
 	}
@@ -236,6 +245,7 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 				errChan <- err
 				return
 			}
+
 			errChan <- nil
 		}(i, p)
 	}
@@ -281,8 +291,6 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 	if err != nil {
 		return t, err
 	}
-
-	fmt.Println(t.Schedule)
 
 	return t, nil
 }

@@ -32,18 +32,6 @@
   revision = "e57e4534cf9b3b00ef6c0175f59d8d2d34f60914"
 
 [[projects]]
-  name = "github.com/gorilla/context"
-  packages = ["."]
-  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
-  version = "v1.1"
-
-[[projects]]
-  name = "github.com/gorilla/mux"
-  packages = ["."]
-  revision = "7f08801859139f86dfafd1c296e2cba9a80d292e"
-  version = "v1.6.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/gregjones/httpcache"
   packages = ["."]
@@ -54,6 +42,18 @@
   name = "github.com/kr/logfmt"
   packages = ["."]
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kr/pretty"
+  packages = ["."]
+  revision = "cfb55aafdaf3ec08f0db22699ab822c50091b1c4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kr/text"
+  packages = ["."]
+  revision = "7cafcd837844e784b526369c9bce262804aebc60"
 
 [[projects]]
   branch = "master"
@@ -82,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "007b3c5b3857cc2df65dd347a24cee3c42d2192ac7ba7e6a71ba67931e52f040"
+  inputs-digest = "887a92c8e3b69cc62ec0601c960f0e5cf6103a2fccc9704e9762473e13ff9208"
   solver-name = "gps-cdcl"
   solver-version = 1

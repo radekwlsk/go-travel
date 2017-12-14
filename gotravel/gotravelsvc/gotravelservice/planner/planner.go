@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/planner/ants"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/planner/ants"
+	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
 	"googlemaps.github.io/maps"
 )
 
@@ -67,11 +67,6 @@ func (planner *Planner) Evaluate() (err error) {
 			results[i] = <-resultChannel
 
 			if results[i].BetterThan(bestResult) {
-				fmt.Printf(
-					"better result! time: %.2f minutes, priorities: %d\n",
-					float64(results[i].Time()/time.Minute),
-					results[i].Priorities(),
-				)
 				bestResult = results[i]
 			}
 		}

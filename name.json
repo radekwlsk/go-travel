@@ -1,5 +1,5 @@
 {
-  "apiKey": "AIzaSyD6tHWGXEjH8ACmVXsEAB6q-JOwtCBY6v8",
+  "apiKey": "AIzaSyB5vZbBb8b9fH2empHRskJrKu4TZXW6blM",
   "mode": "name",
   "tripStart": "2018-01-10T6:00:00+01:00",
   "tripEnd": "2018-01-10T15:00:00+01:00",
@@ -24,7 +24,9 @@
       "description": {
         "name": "Punkt widokowy Sky Tower, Wrocław"
       },
-      "stayDuration": 5
+      "stayDuration": 5,
+      "start": true,
+      "end": true
     },
     {
       "description": {
