@@ -17,7 +17,7 @@ func New(s gotravelservice.Service, logger log.Logger) Endpoints {
 	var tripPlanEndpoint endpoint.Endpoint
 	{
 		tripPlanEndpoint = NewTripPlanEndpoint(s)
-		tripPlanEndpoint = NewLoggingMiddleware(log.With(logger, "method", "TripPlan"))(tripPlanEndpoint)
+		tripPlanEndpoint = NewLoggingMiddleware(log.With(logger, "layer", "endpoint"))(tripPlanEndpoint)
 	}
 	return Endpoints{
 		TripPlanEndpoint: tripPlanEndpoint,

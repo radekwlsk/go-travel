@@ -28,7 +28,7 @@ func New(logger log.Logger) Service {
 	var s Service
 	{
 		s = NewService()
-		s = NewLoggingMiddleware(logger)(s)
+		s = NewLoggingMiddleware(log.With(logger, "layer", "service"))(s)
 	}
 	return s
 }

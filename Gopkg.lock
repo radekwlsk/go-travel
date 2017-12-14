@@ -65,19 +65,19 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp"]
-  revision = "a8b9294777976932365dabb6640cf1468d95c70f"
+  revision = "d866cfc389cec985d6fda2859936a575a55a3ab6"
 
 [[projects]]
   branch = "master"
   name = "gonum.org/v1/gonum"
   packages = ["blas","blas/blas64","blas/gonum","floats","internal/asm/c128","internal/asm/f32","internal/asm/f64","internal/math32","lapack","lapack/gonum","lapack/lapack64","mat"]
-  revision = "de75875b14b17bb3c1933b89fea33f4a45d46e45"
+  revision = "5e16688f6d7090bb395b0e9bc1c2ae3e194b1ab6"
 
 [[projects]]
   branch = "master"
   name = "googlemaps.github.io/maps"
   packages = [".","internal"]
-  revision = "35da55b7ef7abd788b772cd2d33b1727b384b81c"
+  revision = "7bc07438db8f569e75a2d2ca1be64fde336962f5"
 
 [solve-meta]
   analyzer-name = "dep"
