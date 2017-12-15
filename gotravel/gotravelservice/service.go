@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/planner"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/planner"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 	"github.com/afrometal/go-travel/utils"
 	"github.com/go-kit/kit/log"
 	"github.com/gregjones/httpcache"
@@ -264,9 +264,9 @@ func (s *service) TripPlan(ctx context.Context, tc trip.Configuration) (t trip.T
 
 		for _, p := range t.Places {
 			var o string
-			for _, op := range p.Details.OpeningHoursPeriods {
-				if op.Open.Day == tswd {
-					o = op.Open.Time
+			for wd, op := range p.Details.OpeningHoursPeriods {
+				if wd == tswd {
+					o = op.Open
 					break
 				}
 			}

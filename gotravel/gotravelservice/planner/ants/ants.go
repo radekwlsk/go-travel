@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 
 	"github.com/gonum/floats"
 )
@@ -254,11 +254,11 @@ func (a *Ant) placeArrivalDeparture(place *trip.Place, first bool) (arrival, dep
 
 	departure = arrival.Add(time.Duration(place.StayDuration) * time.Minute)
 	oc := place.Details.OpeningHoursPeriods[a.currentTime.Weekday()]
-	if oc.Open.Time == "" || oc.Close.Time == "" {
+	if oc.Open == "" && oc.Close == "" {
 		return arrival, departure, ErrPlaceClosed
 	}
 	{
-		o := oc.Open.Time
+		o := oc.Open
 		y, m, d := arrival.In(place.Details.Location).Date()
 		hh, _ := strconv.Atoi(o[:2])
 		mm, _ := strconv.Atoi(o[2:])
@@ -268,7 +268,7 @@ func (a *Ant) placeArrivalDeparture(place *trip.Place, first bool) (arrival, dep
 		departure = opn.Add(time.Duration(place.StayDuration) * time.Minute)
 	}
 	{
-		c := oc.Close.Time
+		c := oc.Close
 		y, m, d := departure.In(place.Details.Location).Date()
 		hh, _ := strconv.Atoi(c[:2])
 		mm, _ := strconv.Atoi(c[2:])

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/planner/ants"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/planner/ants"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 	"googlemaps.github.io/maps"
 )
 

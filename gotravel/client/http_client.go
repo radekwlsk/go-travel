@@ -8,9 +8,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotraveltransport"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotraveltransport"
 	"github.com/kr/pretty"
 )
 
@@ -45,7 +45,8 @@ func main() {
 		}
 		var tc trip.Configuration
 		json.Unmarshal(raw, &tc)
-		tripPlan(context.Background(), svc, tc)
+		ctx := context.Background()
+		tripPlan(ctx, svc, tc)
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)

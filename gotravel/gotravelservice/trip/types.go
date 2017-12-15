@@ -102,11 +102,16 @@ type Configuration struct {
 }
 
 type PlaceDetails struct {
-	PermanentlyClosed   bool                      `json:"closed"`
-	OpeningHoursPeriods []maps.OpeningHoursPeriod `json:"openingHours"`
-	Location            *time.Location            `json:"-"`
-	FormattedAddress    string                    `json:"formattedAddress"`
-	Name                string                    `json:"name"`
+	PermanentlyClosed   bool                          `json:"closed"`
+	OpeningHoursPeriods map[time.Weekday]OpeningHours `json:"openingHours"`
+	Location            *time.Location                `json:"-"`
+	FormattedAddress    string                        `json:"formattedAddress"`
+	Name                string                        `json:"name"`
+}
+
+type OpeningHours struct {
+	Open  string `json:"open"`
+	Close string `json:"close"`
 }
 
 type Place struct {
@@ -136,17 +141,29 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 		name := strconv.Itoa(resp.UTCOffset / 60)
 		location = time.FixedZone(name, offset)
 	}
-	var openingHours = make([]maps.OpeningHoursPeriod, 7)
+	var openingHours = make(map[time.Weekday]OpeningHours, 7)
 
 	if resp.OpeningHours != nil {
-		for _, o := range resp.OpeningHours.Periods {
-			openingHours[o.Open.Day] = o
+		for i := 0; i < 7; i++ {
+			openingHours[time.Weekday(i)] = OpeningHours{}
 		}
 
-		for i, o := range openingHours {
-			if o.Open.Time == "" || o.Close.Time == "" {
-				openingHours[i].Open.Day = time.Weekday(i)
-				openingHours[i].Close.Day = time.Weekday(i)
+		for _, o := range resp.OpeningHours.Periods {
+			if o.Open.Time == "" && o.Close.Time == "" {
+				continue
+			} else if o.Open.Time == "0000" && o.Close.Time == "" {
+				for i := range openingHours {
+					openingHours[i] = OpeningHours{
+						Open:  "0000",
+						Close: "2359",
+					}
+				}
+				break
+			} else {
+				openingHours[o.Open.Day] = OpeningHours{
+					Open:  o.Open.Time,
+					Close: o.Close.Time,
+				}
 			}
 		}
 	}

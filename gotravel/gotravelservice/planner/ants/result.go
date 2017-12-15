@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 )
 
 type Result struct {

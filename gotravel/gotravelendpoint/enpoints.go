@@ -3,8 +3,8 @@ package gotravelendpoint
 import (
 	"context"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice/trip"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 )

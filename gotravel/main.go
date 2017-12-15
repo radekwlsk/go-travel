@@ -9,9 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelendpoint"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotraveltransport"
+	"github.com/afrometal/go-travel/gotravel/gotravelendpoint"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotraveltransport"
 	"github.com/go-kit/kit/log"
 )
 

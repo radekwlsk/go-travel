@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelendpoint"
-	"github.com/afrometal/go-travel/gotravel/gotravelsvc/gotravelservice"
+	"github.com/afrometal/go-travel/gotravel/gotravelendpoint"
+	"github.com/afrometal/go-travel/gotravel/gotravelservice"
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -45,13 +45,16 @@ func MakeHTTPClient(instance string) (gotravelservice.Service, error) {
 		return nil, err
 	}
 
+	var options []httptransport.ClientOption
+
 	var tripPlanEndpoint endpoint.Endpoint
 	{
 		tripPlanEndpoint = httptransport.NewClient(
 			"POST",
 			copyURL(u, "/api/trip/"),
-			encodeRequest,
+			encodeTripPlanRequest,
 			decodeTripPlanResponse,
+			options...,
 		).Endpoint()
 	}
 
@@ -81,6 +84,12 @@ func decodeTripPlanResponse(_ context.Context, resp *http.Response) (interface{}
 	var response gotravelendpoint.TripPlanResponse
 	err := json.NewDecoder(resp.Body).Decode(&response)
 	return response, err
+}
+
+func encodeTripPlanRequest(ctx context.Context, req *http.Request, request interface{}) error {
+	// r.Methods("POST").Path("/api/trip/")
+	req.Method, req.URL.Path = "POST", "/api/trip/"
+	return encodeRequest(ctx, req, request)
 }
 
 type erroneousResponse interface {
