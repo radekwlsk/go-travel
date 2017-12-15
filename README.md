@@ -75,6 +75,7 @@ curl -s -H "Content-Type: application/json" -d @request.json http://localhost:80
 {
   "schedule" : string,
   "totalDistance" : int (meters),
+  "path" : [int],
   "steps" : [
      {
         "distance" : int (meters),
@@ -85,24 +86,21 @@ curl -s -H "Content-Type: application/json" -d @request.json http://localhost:80
      ...
   ],
   "tripStart" : string ("YYYY-MM-DDThh:mm:ssZ"),
+  "tripEnd" : string ("YYYY-MM-DDThh:mm:ssZ"),
+  "travelMode" : ["driving", "walking", "transit", "bicycling"]
   "places" : [
      {
         "priority" : int (0-10),
         "details" : {
-           "openingHours" : [
-              {
-                 "open" : {
-                    "day" : int (0-6),
-                    "time" : string ("hhmm")
-                 },
-                 "close" : {
-                    "day" : int (0-6),
-                    "time" : string ("hhmm")
-                 },
-                 ...
-              },
-              ...
-           ],
+           "openingHours" : {
+              "0" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "1" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "2" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "3" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "4" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "5" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+              "6" { "open" : string ("hhmm"), "close" : string ("hhmm") },
+           },
            "name" : string,
            "formattedAddress" : string,
            "closed" : bool
@@ -113,8 +111,6 @@ curl -s -H "Content-Type: application/json" -d @request.json http://localhost:80
         "stayDuration" : int (minutes)
      },
      ...
-  ],
-  "tripEnd" : string ("YYYY-MM-DDThh:mm:ssZ"),
-  "travelMode" : ["driving", "walking", "transit", "bicycling"]
+  ]
 }
 ```
