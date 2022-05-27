@@ -2,7 +2,7 @@
 
 ## Format
 
-Requests can be made in four modes:
+Requests can be made in three modes:
 1. **Address**, where places are identified by their address match on Google Maps.
 3. **Name**, where places are searched on Google Maps by provided name and 1st result is selected.
 4. **PlaceID**, where places are identified by their Google Maps API PlaceID
