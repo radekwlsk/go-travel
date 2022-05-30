@@ -49,3 +49,5 @@ results.json
 apikeys.txt
 http_client
 main
+
+vendor/
