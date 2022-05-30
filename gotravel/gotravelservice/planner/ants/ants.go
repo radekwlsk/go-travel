@@ -8,7 +8,7 @@ import (
 
 	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
 
-	"github.com/gonum/floats"
+	"gonum.org/v1/gonum/floats"
 )
 
 var (

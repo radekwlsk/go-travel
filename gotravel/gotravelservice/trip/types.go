@@ -137,8 +137,8 @@ func (p *Place) SetDetails(service interface{}, c *maps.Client, lang string) err
 
 	var location *time.Location
 	{
-		offset := resp.UTCOffset * 60
-		name := strconv.Itoa(resp.UTCOffset / 60)
+		offset := *resp.UTCOffset * 60
+		name := strconv.Itoa(*resp.UTCOffset / 60)
 		location = time.FixedZone(name, offset)
 	}
 	var openingHours = make(map[time.Weekday]OpeningHours, 7)
@@ -311,19 +311,19 @@ type NameDescription struct {
 func (nd *NameDescription) MapsPlaceID(service interface{}, c *maps.Client) (string, error) {
 	var placeId string
 	{
-		r := &maps.TextSearchRequest{
-			Query: nd.Name,
-			Type:  maps.PlaceTypeEstablishment,
+		r := &maps.PlaceAutocompleteRequest{
+			Input: nd.Name,
+			Types: maps.AutocompletePlaceTypeEstablishment,
 		}
-		var resp maps.PlacesSearchResponse
-		resp, err := c.TextSearch(context.Background(), r)
+		var resp maps.AutocompleteResponse
+		resp, err := c.PlaceAutocomplete(context.Background(), r)
 		if err != nil {
 			if strings.Contains(err.Error(), "ZERO_RESULTS") {
 				return "", ErrZeroResults
 			}
 			return "", err
 		}
-		placeId = resp.Results[0].PlaceID
+		placeId = resp.Predictions[0].PlaceID
 	}
 
 	return placeId, nil
