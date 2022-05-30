@@ -1,3 +1,20 @@
+# INSTALL
+
+## Installing dependencies
+
+1. Download and install Go following [go.dev/doc/install](https://go.dev/doc/install)
+3. Create a directory structure `src/github.com/radekwlsk` in your `$GOPATH`
+4. Clone this repository to `$(echo $GOPATH)/src/github.com/radekwlsk`
+5. Go to `$(echo $GOPATH)/src/github.com/radekwlsk/go-travel` where `go.mod` file is located
+6. Run `go mod vendor` to install local vendored copy of dependencies
+
+## Install and run
+
+1. Build and install the service with `go install ./gotravel` 
+2. Run server with `go run gotravel/main.go`
+
+Server will be listening on port 8080 by default.
+
 # REQUESTS
 
 ## Format
@@ -54,6 +71,19 @@ Requests can be made in three modes:
 > `Priority` can be integer value in range 0-10, places with lower priority can be omitted to allow visiting more high-priority places.
 >
 > `StayDuration` is time that tourist plans to spend in place, will be used to calculate route optimizing for trip time and priorities. 
+
+Examples for `address` and `name` modes are included as `address.json` and `name.json`. 
+
+## Create API Key
+
+Requesting data from Google Maps APIs requires providing API key that is activated for _Google Maps Places API_ and 
+_Google Maps Distance Matrix API_. There may be free credit available but use of the APIs can generate cost. **Paying 
+for and providing an API key lies is users responsibility.**
+
+API Key has to be supplied as `"apiKey"` field in the request JSON.
+
+Instructions how to acquire an API Key are available in 
+[Google Maps Platform documentation](https://developers.google.com/maps/documentation/places/web-service/get-api-key).
 
 ## Making requests
 

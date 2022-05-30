@@ -1,8 +1,8 @@
 {
-  "apiKey": "AIzaSyA94IgBPOMjmj3GQSGgEhiMVaIYJC6zJrc",
+  "apiKey": "<YOUR_API_KEY>",
   "mode": "address",
-  "tripStart": "2018-01-10T08:00:00+01:00",
-  "tripEnd": "2018-01-10T17:30:00+01:00",
+  "tripStart": "2023-06-10T08:00:00+01:00",
+  "tripEnd": "2023-06-10T17:30:00+01:00",
   "travelModes": "walking",
   "language": "pl",
   "places": [
