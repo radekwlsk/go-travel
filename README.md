@@ -10,10 +10,12 @@
 
 ## Install and run
 
-1. Build and install the service with `go install ./gotravel` 
-2. Run server with `go run gotravel/main.go`
+1. Build and install the service with `go build gotravel/main.go`
+2. Run with `./main`
 
-Server will be listening on port 8080 by default.
+or run server without installing it using `go run gotravel/main.go`
+
+Server will be listening on port 8080 by default, change it by providing `-http-addr` argument.
 
 # REQUESTS
 
