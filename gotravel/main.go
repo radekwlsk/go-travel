@@ -9,10 +9,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelendpoint"
-	"github.com/afrometal/go-travel/gotravel/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotraveltransport"
 	"github.com/go-kit/kit/log"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelendpoint"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice"
+	"github.com/radekwlsk/go-travel/gotravel/gotraveltransport"
 )
 
 func main() {

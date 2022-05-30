@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/afrometal/go-travel/utils"
+	"github.com/radekwlsk/go-travel/utils"
 	"googlemaps.github.io/maps"
 )
 

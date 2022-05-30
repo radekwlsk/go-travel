@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
-	"github.com/afrometal/go-travel/gotravel/gotraveltransport"
 	"github.com/kr/pretty"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
+	"github.com/radekwlsk/go-travel/gotravel/gotraveltransport"
 )
 
 func main() {

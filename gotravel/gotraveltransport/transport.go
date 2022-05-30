@@ -12,8 +12,8 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelendpoint"
-	"github.com/afrometal/go-travel/gotravel/gotravelservice"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelendpoint"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice"
 
 	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 	"github.com/go-kit/kit/log"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
 )
 
 // Middleware is a service middleware, similar to endpoint middleware

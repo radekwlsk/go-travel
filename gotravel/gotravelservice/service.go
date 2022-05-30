@@ -9,12 +9,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/planner"
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
-	"github.com/afrometal/go-travel/utils"
 	"github.com/go-kit/kit/log"
 	"github.com/gregjones/httpcache"
 	"github.com/mitchellh/mapstructure"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/planner"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
+	"github.com/radekwlsk/go-travel/utils"
 	"googlemaps.github.io/maps"
 )
 

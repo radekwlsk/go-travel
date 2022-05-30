@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
 	"gonum.org/v1/gonum/mat"
 )
 

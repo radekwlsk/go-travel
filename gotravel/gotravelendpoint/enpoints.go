@@ -3,10 +3,10 @@ package gotravelendpoint
 import (
 	"context"
 
-	"github.com/afrometal/go-travel/gotravel/gotravelservice"
-	"github.com/afrometal/go-travel/gotravel/gotravelservice/trip"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice"
+	"github.com/radekwlsk/go-travel/gotravel/gotravelservice/trip"
 )
 
 type Endpoints struct {
