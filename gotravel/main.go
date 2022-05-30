@@ -1,4 +1,4 @@
-package gotravel
+package main
 
 import (
 	"flag"

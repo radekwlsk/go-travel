@@ -18,6 +18,8 @@ github.com/kr/text v0.0.0-20160504234017-7cafcd837844 h1:kpzneEBeC0dMewP3gr/fADv
 github.com/kr/text v0.0.0-20160504234017-7cafcd837844/go.mod h1:sjUstKUATFIcff4qlB53Kml0wQPtJVc/3fWrmuUmcfA=
 github.com/mitchellh/mapstructure v0.0.0-20171017171808-06020f85339e h1:PtGHLB3CX3TFPcksODQMxncoeQKWwCgTg0bJ40VLJP4=
 github.com/mitchellh/mapstructure v0.0.0-20171017171808-06020f85339e/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
+github.com/radekwlsk/go-travel v0.0.0-20220530100853-d37812c6b615 h1:5f+p0fYJcAjikHU+mSjx/lIoAbb8kBRljwbrJeRJSPY=
+github.com/radekwlsk/go-travel v0.0.0-20220530100853-d37812c6b615/go.mod h1:x6z9/N6POVwAKe3y1sFYvOzy/SjYWibQ+GEwEU9zol4=
 golang.org/x/net v0.0.0-20171212005608-d866cfc389ce h1:4g3VPcb++AP2cNa6CQ0iACUoH7J/3Jxojq0mmJun9A4=
 golang.org/x/net v0.0.0-20171212005608-d866cfc389ce/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=
 gonum.org/v1/gonum v0.0.0-20171214103319-5e16688f6d70 h1:kiPHPseaTr+5M/27NqXXw+Mygyzka2zSz0wmF3d7DHA=

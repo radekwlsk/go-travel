@@ -1,4 +1,4 @@
-module github.com/radekwlsk/go-travel
+module github.com/radekwlsk/go-travel/gotravel
 
 go 1.18
 
@@ -17,3 +17,5 @@ require (
 	gonum.org/v1/gonum v0.0.0-20171214103319-5e16688f6d70
 	googlemaps.github.io/maps v0.0.0-20171213015731-7bc07438db8f
 )
+
+require github.com/radekwlsk/go-travel v0.0.0-20220530100853-d37812c6b615 // indirect
